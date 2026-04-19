@@ -14,16 +14,291 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      departments: {
+        Row: {
+          budget_monthly: number | null
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          manager_id: string | null
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          budget_monthly?: number | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          manager_id?: string | null
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          budget_monthly?: number | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          manager_id?: string | null
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departments_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      key_results: {
+        Row: {
+          created_at: string
+          current_value: number | null
+          due_date: string | null
+          id: string
+          metric_unit: string | null
+          objective_id: string
+          owner_id: string | null
+          start_value: number | null
+          status: Database["public"]["Enums"]["kr_status"]
+          target_value: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_value?: number | null
+          due_date?: string | null
+          id?: string
+          metric_unit?: string | null
+          objective_id: string
+          owner_id?: string | null
+          start_value?: number | null
+          status?: Database["public"]["Enums"]["kr_status"]
+          target_value: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_value?: number | null
+          due_date?: string | null
+          id?: string
+          metric_unit?: string | null
+          objective_id?: string
+          owner_id?: string | null
+          start_value?: number | null
+          status?: Database["public"]["Enums"]["kr_status"]
+          target_value?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "key_results_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "objectives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "key_results_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      objectives: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          department_id: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          level: Database["public"]["Enums"]["objective_level"]
+          owner_id: string | null
+          parent_id: string | null
+          progress: number
+          quarter: string
+          start_date: string | null
+          status: Database["public"]["Enums"]["objective_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          level?: Database["public"]["Enums"]["objective_level"]
+          owner_id?: string | null
+          parent_id?: string | null
+          progress?: number
+          quarter: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["objective_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          level?: Database["public"]["Enums"]["objective_level"]
+          owner_id?: string | null
+          parent_id?: string | null
+          progress?: number
+          quarter?: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["objective_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "objectives_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "objectives_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "objectives_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          department_id: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          job_title: string | null
+          monthly_cost: number | null
+          phone: string | null
+          updated_at: string
+          weekly_capacity_hours: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          department_id?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          job_title?: string | null
+          monthly_cost?: number | null
+          phone?: string | null
+          updated_at?: string
+          weekly_capacity_hours?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          department_id?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          job_title?: string | null
+          monthly_cost?: number | null
+          phone?: string | null
+          updated_at?: string
+          weekly_capacity_hours?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_any_role: {
+        Args: {
+          _roles: Database["public"]["Enums"]["app_role"][]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "ceo" | "executive" | "manager" | "member"
+      kr_status: "not_started" | "in_progress" | "completed" | "blocked"
+      objective_level: "company" | "department" | "individual"
+      objective_status:
+        | "on_track"
+        | "at_risk"
+        | "off_track"
+        | "completed"
+        | "archived"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +425,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["ceo", "executive", "manager", "member"],
+      kr_status: ["not_started", "in_progress", "completed", "blocked"],
+      objective_level: ["company", "department", "individual"],
+      objective_status: [
+        "on_track",
+        "at_risk",
+        "off_track",
+        "completed",
+        "archived",
+      ],
+    },
   },
 } as const
