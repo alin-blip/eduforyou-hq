@@ -5,16 +5,23 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AuthProvider } from "@/hooks/useAuth";
+import { EntityProvider } from "@/hooks/useEntity";
+import { CopilotProvider } from "@/hooks/useCopilot";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { CopilotDrawer } from "@/components/copilot/CopilotDrawer";
 
 import Index from "./pages/Index.tsx";
 import AuthPage from "./pages/Auth.tsx";
 import OkrPage from "./pages/Okr.tsx";
+import VisionPage from "./pages/Vision.tsx";
+import StrategyTreesPage from "./pages/StrategyTrees.tsx";
 import TeamsPage from "./pages/Teams.tsx";
 import CiclesPage from "./pages/Cicles.tsx";
 import TasksPage from "./pages/Tasks.tsx";
 import CfoPage from "./pages/Cfo.tsx";
+import SalesPage from "./pages/Sales.tsx";
+import AccountabilityPage from "./pages/Accountability.tsx";
 import ProjectsPage from "./pages/Projects.tsx";
 import IntegrationsPage from "./pages/Integrations.tsx";
 import ReportsPage from "./pages/Reports.tsx";
@@ -30,29 +37,37 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/auth" element={<AuthPage />} />
-            <Route
-              element={
-                <ProtectedRoute>
-                  <AppLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/" element={<Index />} />
-              <Route path="/okr" element={<OkrPage />} />
-              <Route path="/teams" element={<TeamsPage />} />
-              <Route path="/cicles" element={<CiclesPage />} />
-              <Route path="/tasks" element={<TasksPage />} />
-              <Route path="/cfo" element={<CfoPage />} />
-              <Route path="/projects" element={<ProjectsPage />} />
-              <Route path="/integrations" element={<IntegrationsPage />} />
-              <Route path="/reports" element={<ReportsPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-            </Route>
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <EntityProvider>
+            <CopilotProvider>
+              <Routes>
+                <Route path="/auth" element={<AuthPage />} />
+                <Route
+                  element={
+                    <ProtectedRoute>
+                      <AppLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route path="/" element={<Index />} />
+                  <Route path="/vision" element={<VisionPage />} />
+                  <Route path="/strategy-trees" element={<StrategyTreesPage />} />
+                  <Route path="/okr" element={<OkrPage />} />
+                  <Route path="/accountability" element={<AccountabilityPage />} />
+                  <Route path="/teams" element={<TeamsPage />} />
+                  <Route path="/cicles" element={<CiclesPage />} />
+                  <Route path="/tasks" element={<TasksPage />} />
+                  <Route path="/sales" element={<SalesPage />} />
+                  <Route path="/cfo" element={<CfoPage />} />
+                  <Route path="/projects" element={<ProjectsPage />} />
+                  <Route path="/integrations" element={<IntegrationsPage />} />
+                  <Route path="/reports" element={<ReportsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <CopilotDrawer />
+            </CopilotProvider>
+          </EntityProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
