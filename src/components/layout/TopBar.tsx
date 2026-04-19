@@ -1,4 +1,4 @@
-import { Bell, LogOut, Search, Plus, User as UserIcon } from "lucide-react";
+import { Bell, LogOut, Search, Plus, User as UserIcon, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
+import { useCopilot } from "@/hooks/useCopilot";
+import { EntitySwitcher } from "./EntitySwitcher";
 
 const roleLabel: Record<string, string> = {
   ceo: "CEO",

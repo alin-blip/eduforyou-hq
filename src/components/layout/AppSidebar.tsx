@@ -11,6 +11,10 @@ import {
   BarChart3,
   Settings,
   Sparkles,
+  Eye,
+  GitBranch,
+  TrendingUp,
+  ShieldCheck,
 } from "lucide-react";
 
 import {
@@ -33,9 +37,17 @@ const navGroups = [
     items: [{ title: "CEO Cockpit", url: "/", icon: LayoutDashboard }],
   },
   {
+    label: "Strategy",
+    items: [
+      { title: "Vivid VISION", url: "/vision", icon: Eye },
+      { title: "Strategy Trees", url: "/strategy-trees", icon: GitBranch },
+      { title: "OKR & KPI", url: "/okr", icon: Target },
+      { title: "Accountability", url: "/accountability", icon: ShieldCheck },
+    ],
+  },
+  {
     label: "Execution",
     items: [
-      { title: "OKR & KPI", url: "/okr", icon: Target },
       { title: "Teams", url: "/teams", icon: Users },
       { title: "CICLES", url: "/cicles", icon: CalendarClock },
       { title: "Tasks", url: "/tasks", icon: CheckSquare },
@@ -44,6 +56,7 @@ const navGroups = [
   {
     label: "Business",
     items: [
+      { title: "Sales Pipeline", url: "/sales", icon: TrendingUp },
       { title: "Virtual CFO", url: "/cfo", icon: Wallet },
       { title: "Project Hub", url: "/projects", icon: FolderKanban },
       { title: "Reports", url: "/reports", icon: BarChart3 },
