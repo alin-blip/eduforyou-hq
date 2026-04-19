@@ -62,8 +62,8 @@ export default function VisionPage() {
           mission: data.mission ?? "",
           brand_promise: data.brand_promise ?? "",
           bhag: data.bhag ?? "",
-          core_values: (data.core_values as string[]) ?? [],
-          milestones: (data.milestones as Milestone[]) ?? [],
+          core_values: (data.core_values as unknown as string[]) ?? [],
+          milestones: (data.milestones as unknown as Milestone[]) ?? [],
           target_year: data.target_year ?? empty.target_year,
         });
       }
@@ -73,14 +73,14 @@ export default function VisionPage() {
   const save = async () => {
     if (!current || !user) return;
     setSaving(true);
-    const payload = {
+    const payload: any = {
       entity_id: current.id,
       story: vision.story,
       mission: vision.mission,
       brand_promise: vision.brand_promise,
       bhag: vision.bhag,
-      core_values: vision.core_values,
-      milestones: vision.milestones,
+      core_values: vision.core_values as any,
+      milestones: vision.milestones as any,
       target_year: vision.target_year,
       created_by: user.id,
     };

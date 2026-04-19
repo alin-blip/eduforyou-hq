@@ -131,11 +131,11 @@ export default function StrategyTreesPage() {
     if (!current || !user) return;
     setSaving(true);
     const tree = trees[activeType];
-    const payload = {
+    const payload: any = {
       entity_id: current.id,
       type: tree.type,
       name: tree.name,
-      data: tree.data,
+      data: tree.data as any,
       created_by: user.id,
     };
     const { data, error } = tree.id
