@@ -14,6 +14,161 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_insights: {
+        Row: {
+          content: string
+          entity_id: string | null
+          generated_at: string
+          generated_for: string | null
+          id: string
+          metadata: Json | null
+          severity: string | null
+          title: string
+          type: Database["public"]["Enums"]["insight_type"]
+        }
+        Insert: {
+          content: string
+          entity_id?: string | null
+          generated_at?: string
+          generated_for?: string | null
+          id?: string
+          metadata?: Json | null
+          severity?: string | null
+          title: string
+          type?: Database["public"]["Enums"]["insight_type"]
+        }
+        Update: {
+          content?: string
+          entity_id?: string | null
+          generated_at?: string
+          generated_for?: string | null
+          id?: string
+          metadata?: Json | null
+          severity?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["insight_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_insights_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      benchmarks: {
+        Row: {
+          created_at: string
+          id: string
+          industry: string
+          metric: string
+          notes: string | null
+          source: string | null
+          unit: string | null
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          industry?: string
+          metric: string
+          notes?: string | null
+          source?: string | null
+          unit?: string | null
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          industry?: string
+          metric?: string
+          notes?: string | null
+          source?: string | null
+          unit?: string | null
+          updated_at?: string
+          value?: number
+        }
+        Relationships: []
+      }
+      deals: {
+        Row: {
+          company_name: string | null
+          contact_email: string | null
+          contact_name: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          entity_id: string | null
+          expected_close: string | null
+          id: string
+          notes: string | null
+          owner_id: string | null
+          source: string | null
+          stage_id: string | null
+          status: Database["public"]["Enums"]["deal_status"]
+          title: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          company_name?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          entity_id?: string | null
+          expected_close?: string | null
+          id?: string
+          notes?: string | null
+          owner_id?: string | null
+          source?: string | null
+          stage_id?: string | null
+          status?: Database["public"]["Enums"]["deal_status"]
+          title: string
+          updated_at?: string
+          value?: number
+        }
+        Update: {
+          company_name?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          entity_id?: string | null
+          expected_close?: string | null
+          id?: string
+          notes?: string | null
+          owner_id?: string | null
+          source?: string | null
+          stage_id?: string | null
+          status?: Database["public"]["Enums"]["deal_status"]
+          title?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           budget_monthly: number | null
@@ -60,6 +215,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      entities: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_default: boolean
+          logo_url: string | null
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          logo_url?: string | null
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          logo_url?: string | null
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       key_results: {
         Row: {
@@ -197,6 +385,50 @@ export type Database = {
           },
         ]
       }
+      pipeline_stages: {
+        Row: {
+          color: string | null
+          created_at: string
+          entity_id: string | null
+          id: string
+          is_lost: boolean
+          is_won: boolean
+          name: string
+          position: number
+          probability: number
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          is_lost?: boolean
+          is_won?: boolean
+          name: string
+          position?: number
+          probability?: number
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          is_lost?: boolean
+          is_won?: boolean
+          name?: string
+          position?: number
+          probability?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_stages_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -247,6 +479,50 @@ export type Database = {
           },
         ]
       }
+      strategy_trees: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data: Json
+          description: string | null
+          entity_id: string | null
+          id: string
+          name: string
+          type: Database["public"]["Enums"]["tree_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          description?: string | null
+          entity_id?: string | null
+          id?: string
+          name: string
+          type: Database["public"]["Enums"]["tree_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          description?: string | null
+          entity_id?: string | null
+          id?: string
+          name?: string
+          type?: Database["public"]["Enums"]["tree_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategy_trees_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -267,6 +543,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vision: {
+        Row: {
+          bhag: string | null
+          brand_promise: string | null
+          core_values: Json | null
+          created_at: string
+          created_by: string | null
+          entity_id: string | null
+          id: string
+          milestones: Json | null
+          mission: string | null
+          story: string | null
+          target_year: number | null
+          updated_at: string
+        }
+        Insert: {
+          bhag?: string | null
+          brand_promise?: string | null
+          core_values?: Json | null
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string | null
+          id?: string
+          milestones?: Json | null
+          mission?: string | null
+          story?: string | null
+          target_year?: number | null
+          updated_at?: string
+        }
+        Update: {
+          bhag?: string | null
+          brand_promise?: string | null
+          core_values?: Json | null
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string | null
+          id?: string
+          milestones?: Json | null
+          mission?: string | null
+          story?: string | null
+          target_year?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vision_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -291,6 +620,8 @@ export type Database = {
     }
     Enums: {
       app_role: "ceo" | "executive" | "manager" | "member"
+      deal_status: "open" | "won" | "lost"
+      insight_type: "cfo" | "copilot" | "alert" | "recommendation"
       kr_status: "not_started" | "in_progress" | "completed" | "blocked"
       objective_level: "company" | "department" | "individual"
       objective_status:
@@ -299,6 +630,7 @@ export type Database = {
         | "off_track"
         | "completed"
         | "archived"
+      tree_type: "value" | "profit" | "kpi"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -427,6 +759,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["ceo", "executive", "manager", "member"],
+      deal_status: ["open", "won", "lost"],
+      insight_type: ["cfo", "copilot", "alert", "recommendation"],
       kr_status: ["not_started", "in_progress", "completed", "blocked"],
       objective_level: ["company", "department", "individual"],
       objective_status: [
@@ -436,6 +770,7 @@ export const Constants = {
         "completed",
         "archived",
       ],
+      tree_type: ["value", "profit", "kpi"],
     },
   },
 } as const
