@@ -1,105 +1,105 @@
 
 
-# EduForYou OS — Management Operating System
+# Val 2.5 — Strategic Layer (BizzOS-grade upgrade)
 
-Platformă centrală de management pentru EduForYou care unifică echipele, OKR/KPI, ritm de execuție, finanțe, integrări marketing și hub pentru proiectele conexe (Agent Hub, Partners SAAS, Webinar, etc.).
+## Ce am identificat ca lipsă față de BizzOS Orchestrate
 
-## 🏗️ Arhitectură generală
+Am construit deja: CEO Cockpit, OKR/KPI Engine, Teams, CICLES, Tasks, Virtual CFO (schelet), Project Hub, Integrări (schelet), Reports.
 
-- **Backend**: Lovable Cloud (auth, baza de date, edge functions pentru OAuth + sincronizări)
-- **Roluri**: CEO · Executive · Department Manager · Team Member (RLS strict, roluri în tabel separat)
-- **Multi-tenant ready**: structura permite ulterior adăugarea altor companii (holding view)
+Ce ne lipsește pentru a atinge nivelul "Orchestrate":
 
-## 📦 Module de livrat
+| Modul BizzOS | Status actual EduForYou OS | Acțiune |
+|---|---|---|
+| **Vivid VISION** (sistem strategic 3 ani) | ❌ lipsă | **adaugă** |
+| **Value Tree / Profit Tree / KPI Tree** | ❌ lipsă (avem doar liste) | **adaugă** |
+| **KPI cross-department** (corelații) | ⚠ parțial | **extinde** |
+| **Scenario Engine AI** (simulări multiple) | ⚠ doar sliders simple | **extinde cu AI** |
+| **AI Copilot decizional** (chat strategic) | ❌ lipsă | **adaugă** |
+| **AI CFO Strategic** (analiză + recomandări) | ❌ doar tracking | **adaugă strat AI** |
+| **EBITDA impact per KPI** | ❌ lipsă | **adaugă** |
+| **Benchmarking industrie** | ❌ lipsă | **adaugă (manual now, API later)** |
+| **Multi-entity / divizii** (holding view) | ⚠ ready, dar fără UI | **adaugă switcher** |
+| **Accountability system** (cine răspunde de ce KPI) | ⚠ parțial | **extinde** |
+| **Sales pipeline + forecast** | ❌ lipsă (vine din GHL) | **adaugă pagină dedicată** |
+| **Profit per linie de business / per client** | ⚠ doar revenue per sursă | **extinde CFO** |
 
-### 1. Auth & Organization
-- Login email/parolă + magic link
-- Profil utilizator (nume, rol, departament, avatar, salariu opțional pentru cost calc)
-- Invitație membri prin email
-- Departamente configurabile (Marketing, Sales, Operations, Product, Finance, etc.)
+## Ce livrăm în Val 2.5
 
-### 2. CEO Cockpit (Dashboard principal)
-- Scor PACE™ (Planning · Alignment · Coordination · Evaluation) — health score 0-100
-- Widget-uri: revenue MTD, burn rate, runway, OKR completion %, KPI alerts roșu/verde, task overdue
-- Heatmap performanță pe departamente
-- Quick links către Agent Hub, Partners SAAS, Webinar (proiectele tale conexe)
+### 1. Vivid VISION Builder
+Pagină dedicată `/vision` unde definești:
+- **Vision pe 3 ani** (story narativ + metrici țintă)
+- **Mission & Core values**
+- **Big Hairy Audacious Goal** (BHAG)
+- **Brand promise**
+- Vizualizare timeline 3 ani cu milestones anuale → leagă automat de OKR-urile trimestriale
 
-### 3. OKR & KPI Engine
-- **Obiective companie** → cascadă către departamente → individual
-- Key Results cu progres %, owner, due date, check-in săptămânal
-- KPI cards (target, actual, trend, threshold roșu/galben/verde) per departament
-- Istoric & forecast (line chart)
-- Aliniere vizuală: ce OKR personal contribuie la ce obiectiv companie
+### 2. Strategy Trees (Value · Profit · KPI)
+Componentă `TreeBuilder` reutilizabilă (drag & drop ierarhic):
+- **Value Tree**: cum se creează valoare pentru client → leagă de KPI
+- **Profit Tree**: revenue → cost → margin (descompunere vizuală pe linii business: B2C, Agent Hub, Partners SAAS, Webinar)
+- **KPI Tree**: KPI companie → KPI departament → KPI individual (cascade vizuală)
+- Salvate în tabel nou `strategy_trees` (jsonb pentru flexibilitate)
 
-### 4. Teams & Workload
-- Vizualizare echipe pe departamente, organigramă
-- Workload per membru (task-uri active, ore estimate vs disponibile)
-- "What is X working on" — feed live cu ce face fiecare astăzi/săptămâna asta
-- Capacitate vs cerere (alertă overload)
+### 3. AI Copilot Decizional (Lovable AI)
+Drawer global accesibil cu Cmd+K din orice pagină:
+- Folosește **google/gemini-2.5-pro** prin Lovable AI Gateway (fără API key)
+- Context: vede toate KPI, OKR, finance data ale companiei
+- Întrebări tip: "De ce a scăzut conversia luna asta?", "Ce ar trebui să prioritizez?", "Generează un plan pentru Q1"
+- Edge function `ai-copilot` cu RLS pe context (vede doar ce poate vedea user-ul)
 
-### 5. CICLES™ — Ritmul de execuție
-- **Daily Check-in (15 min)**: ce am făcut ieri, ce fac azi, blocaje
-- **Weekly Board (60 min)**: review KPI săptămână, decizii, action items
-- **Monthly KPI Review (120 min)**: analiză performanță, ajustări OKR
-- **Quarterly Strategy (240 min)**: scor PACE, retrospectivă, planning trimestrul următor
-- Notificări automate, template-uri, istoric meeting notes
+### 4. AI CFO Strategic
+Tab nou în `/cfo` → "AI Insights":
+- Analizează automat P&L, cashflow, runway
+- Generează **3 recomandări săptămânale** (ex: "Reduceți spend pe canal X cu 20%, ROAS scăzut")
+- **Scenario Engine avansat**: descrii în limbaj natural ("Dacă angajez 3 oameni noi și cresc spend Meta cu 30%"), AI calculează impact pe runway/profit
+- **EBITDA impact per KPI**: pentru fiecare KPI, AI estimează cât contribuie la EBITDA
 
-### 6. Tasks & Projects
-- Task-uri legate de KPI/OKR (lanț strategie → execuție)
-- Status (todo/in progress/blocked/done), prioritate, asignat
-- Vizualizare Kanban + List + Calendar
-- Integrare cu departamente
+### 5. Sales Pipeline & Forecast
+Pagină nouă `/sales`:
+- Pipeline Kanban (Lead → Qualified → Proposal → Won/Lost)
+- Forecast vânzări (luna curentă + 3 luni)
+- Funnel pe canale (organic, Meta, Google, GHL, partners)
+- Tabel `deals` + `pipeline_stages` (manual now, sync din GHL în Val 3)
 
-### 7. Virtual CFO complet
-- **Revenue tracking** lunar/trimestrial pe sursă (B2C eduforyou, Agent Hub, Partners SAAS)
-- **Cheltuieli** pe categorii (salarii, ads, software, etc.) și pe departament
-- **P&L** automat, marjă brută/netă
-- **Cashflow & runway** (luni rămase la burn-rate actual)
-- **Facturi & debite**: facturi emise, scadente, debite per client, alerte automate scadență
-- **Forecast & scenarii**: proiecții 3/6/12 luni cu sliders (creștere %, cost %, hire plan)
-- **KPI financiari**: CAC, LTV, payback, marjă pe linie de business
-- **Bugete pe departament** vs actual, alerte depășire
+### 6. Multi-Entity Switcher
+Top-bar adaugă selector de entitate (acum doar "EduForYou", dar pregătit pentru holding):
+- Tabel nou `entities` (companii din holding)
+- Toate datele filtrate pe `entity_id`
+- "All entities" view pentru consolidare
 
-### 8. Integrări Marketing & Data (OAuth/API real)
+### 7. Accountability Matrix
+Pagină nouă `/accountability`:
+- Matrice vizuală: KPI × Owner (cine răspunde de ce)
+- Status per owner (on track / at risk / off track)
+- Alertă automată dacă un KPI nu are owner
 
-Toate prin Lovable Cloud edge functions, cu refresh token management:
+### 8. Benchmarking (manual seed)
+Tab în `/reports`:
+- Editor manual pentru benchmarks pe industrie (EdTech: avg CAC, LTV, churn, etc.)
+- Comparație side-by-side cu metricile tale
+- Pregătit pentru SimilarWeb sync în Val 3
 
-- **Meta Ads (Facebook/Instagram)** — campanii, spend, ROAS, CPL, audiences
-- **Google Analytics 4** — sesiuni, conversii, surse trafic, funnel
-- **Google Tag Manager** — listă tag-uri, status, audit
-- **GoHighLevel (GHL)** — leads, pipeline, contacte, conversii
-- **SimilarWeb** — trafic competitori, ranking
-- **(opțional ulterior)** Google Ads, LinkedIn Ads, Stripe, Mailchimp
+## Tabele noi
 
-Pentru fiecare: pagină dashboard dedicată + widget-uri în CEO Cockpit + date alimentează KPI-urile.
+```text
+strategy_trees     (id, type [value|profit|kpi], data jsonb, entity_id)
+vision             (id, story, mission, values jsonb, bhag, milestones jsonb, entity_id)
+deals              (id, title, value, stage, owner_id, source, expected_close)
+pipeline_stages    (id, name, position, probability)
+entities           (id, name, slug, logo_url)
+benchmarks         (id, metric, industry, value, source)
+ai_insights        (id, type, content, generated_at, entity_id)
+```
 
-> Notă: GHL și SimilarWeb necesită API key manual (le adăugăm ca secrets); Meta + Google folosesc OAuth (vom configura aplicații OAuth — îți voi cere credentialele când ajungem acolo).
+## Ordine de livrare (1 sesiune)
 
-### 9. Project Hub (proiectele EduForYou)
-- Pagină cu carduri pentru fiecare proiect Lovable conex: **Agent Hub**, **Partners SAAS AgencyOS**, **Webinar EduForYou**, **EduForYou main**, **Eduforyou Hub**, **Student Success Hub**
-- Status (live/draft), URL, owner, KPI cheie per proiect (ex: nr. agenți, nr. parteneri, înscrieri webinar)
-- Sincronizare manuală a metricilor + posibilitate ulterioară de webhook
+1. Multi-entity (fundație) + Vivid VISION
+2. Strategy Trees (Value · Profit · KPI)
+3. Sales Pipeline + Accountability Matrix
+4. AI Copilot decizional (drawer global)
+5. AI CFO Strategic + Scenario Engine
+6. Benchmarking + finisaje
 
-### 10. 360° Comparison & Reports
-- Snapshot lunar al companiei (PACE score, financials, OKR completion, marketing performance)
-- Comparație lună-pe-lună / trimestru-pe-trimestru
-- Export PDF "Board Report" pentru investitori/board
-- AI Insights (folosind Lovable AI Gateway): rezumat săptămânal automat al schimbărilor importante
-
-## 🎨 Design & UX
-
-- **Tema**: dark mode default, premium "operating system" feel (inspirat BizzOS — gradient subtle, glassmorphism light, tipografie clean)
-- **Culori**: primary albastru-închis/violet (autoritate), accent verde (creștere), roșu (alertă), galben (warning)
-- **Layout**: sidebar fix stânga cu module, top bar cu search global + notifications + user menu
-- **Responsive**: optimizat desktop (CEO/manager use case) + funcțional mobil pentru check-in zilnic
-
-## 🚀 Plan de livrare
-
-Având în vedere că ai ales "totul deodată", livrăm în **3 valuri** într-o singură sesiune de implementare, ca să poți începe să folosești cât mai repede:
-
-1. **Val 1 — Foundation** (auth, roluri, departamente, echipe, CEO cockpit cu mock data, design system complet)
-2. **Val 2 — Core management** (OKR/KPI engine, tasks, CICLES, Project Hub, Virtual CFO complet)
-3. **Val 3 — Integrări** (schelet OAuth + GHL/Meta/GA/GTM/SimilarWeb dashboards — vom finaliza fiecare integrare pe rând după ce primim credentialele OAuth)
-
-După ce aprobi, încep cu Val 1.
+## Ce rămâne pentru Val 3 (neschimbat)
+Integrări reale OAuth: Meta Ads, GA4, GTM, GHL, SimilarWeb. Acestea vor alimenta automat KPI Tree, Sales Pipeline și Benchmarking.
 
