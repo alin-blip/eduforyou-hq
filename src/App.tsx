@@ -4,8 +4,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
+
 import Index from "./pages/Index.tsx";
+import AuthPage from "./pages/Auth.tsx";
 import OkrPage from "./pages/Okr.tsx";
 import TeamsPage from "./pages/Teams.tsx";
 import CiclesPage from "./pages/Cicles.tsx";
@@ -25,22 +29,31 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/okr" element={<OkrPage />} />
-            <Route path="/teams" element={<TeamsPage />} />
-            <Route path="/cicles" element={<CiclesPage />} />
-            <Route path="/tasks" element={<TasksPage />} />
-            <Route path="/cfo" element={<CfoPage />} />
-            <Route path="/projects" element={<ProjectsPage />} />
-            <Route path="/integrations" element={<IntegrationsPage />} />
-            <Route path="/reports" element={<ReportsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-          </Route>
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<AuthPage />} />
+            <Route
+              element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/" element={<Index />} />
+              <Route path="/okr" element={<OkrPage />} />
+              <Route path="/teams" element={<TeamsPage />} />
+              <Route path="/cicles" element={<CiclesPage />} />
+              <Route path="/tasks" element={<TasksPage />} />
+              <Route path="/cfo" element={<CfoPage />} />
+              <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/integrations" element={<IntegrationsPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+            </Route>
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
