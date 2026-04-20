@@ -132,6 +132,9 @@ export default function TeamsPage() {
             <Button variant="outline" onClick={() => { setDeptDialog(null); setDeptDialogOpen(true); }}>
               <Building2 className="h-4 w-4 mr-2" /> Departament nou
             </Button>
+            <Button variant="outline" onClick={handleResendAll} disabled={resending}>
+              <Mail className="h-4 w-4 mr-2" /> {resending ? "Se trimit..." : "Retrimite invitații"}
+            </Button>
             <Button onClick={() => setInviteOpen(true)}>
               <UserPlus className="h-4 w-4 mr-2" /> Invită membru
             </Button>
