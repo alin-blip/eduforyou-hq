@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BarChart3, Plus, Trash2, TrendingUp } from "lucide-react";
+import { BarChart3, Plus, Trash2, TrendingUp, Sparkles, FileDown, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import {
+  DepartmentComparison,
+  type DepartmentPerformance,
+} from "@/components/reports/DepartmentComparison";
+import { WeeklySummary, type WeeklyReport } from "@/components/reports/WeeklySummary";
+import { exportReportsPdf } from "@/lib/reportsPdf";
 
 interface Benchmark {
   id: string;
@@ -24,11 +30,70 @@ export default function ReportsPage() {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState({ metric: "", industry: "EdTech", value: 0, unit: "", source: "" });
 
-  const load = async () => {
+  const [departments, setDepartments] = useState<DepartmentPerformance[]>([]);
+  const [loadingDept, setLoadingDept] = useState(true);
+  const [report, setReport] = useState<WeeklyReport | null>(null);
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const loadBenchmarks = async () => {
     const { data } = await supabase.from("benchmarks").select("*").order("metric");
     if (data) setBenchmarks(data as Benchmark[]);
   };
-  useEffect(() => { load(); }, []);
+
+  const loadDepartments = async () => {
+    setLoadingDept(true);
+    const { data, error } = await supabase.rpc("get_department_performance", { _months: 1 });
+    if (error) {
+      toast.error(error.message);
+    } else if ((data as any)?.error === "forbidden") {
+      toast.error("Doar managerii și executivii pot vizualiza acest raport.");
+    } else {
+      setDepartments(((data as any)?.departments ?? []) as DepartmentPerformance[]);
+    }
+    setLoadingDept(false);
+  };
+
+  useEffect(() => {
+    loadBenchmarks();
+    loadDepartments();
+  }, []);
+
+  const generateAiReport = async () => {
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("reports-weekly-summary", { body: {} });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setReport((data as any).report as WeeklyReport);
+      setGeneratedAt((data as any).generated_at as string);
+      toast.success("Weekly summary generat");
+    } catch (e: any) {
+      const msg = String(e?.message ?? e);
+      if (msg.includes("Rate limit")) toast.error("Rate limit AI. Încearcă peste un minut.");
+      else if (msg.includes("Credit")) toast.error("Credit AI epuizat. Settings → Workspace → Usage.");
+      else toast.error(msg || "Eroare la generarea raportului");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const downloadPdf = async () => {
+    if (departments.length === 0) {
+      toast.error("Datele departamentelor nu s-au încărcat.");
+      return;
+    }
+    setPdfLoading(true);
+    try {
+      exportReportsPdf({ departments, report, generatedAt });
+      toast.success("PDF descărcat");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Eroare la export PDF");
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   const create = async () => {
     if (!draft.metric.trim()) return;
@@ -36,33 +101,71 @@ export default function ReportsPage() {
     if (error) return toast.error(error.message);
     setOpen(false);
     setDraft({ metric: "", industry: "EdTech", value: 0, unit: "", source: "" });
-    await load();
+    await loadBenchmarks();
     toast.success("Benchmark adăugat");
   };
 
   const remove = async (id: string) => {
     await supabase.from("benchmarks").delete().eq("id", id);
-    await load();
+    await loadBenchmarks();
   };
 
   return (
-    <div className="space-y-6">
-      <header>
-        <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-border/50 bg-card/50 px-3 py-1 text-xs">
-          <BarChart3 className="h-3 w-3 text-primary" />
-          <span className="text-muted-foreground">Reports & Benchmarks</span>
+    <div className="space-y-6 p-6">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-border/50 bg-card/50 px-3 py-1 text-xs">
+            <BarChart3 className="h-3 w-3 text-primary" />
+            <span className="text-muted-foreground">Reports & 360°</span>
+          </div>
+          <h1 className="font-display text-3xl font-semibold">Executive 360° Dashboard</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Performanță departamente live, AI weekly summary și export PDF Board Report.
+          </p>
         </div>
-        <h1 className="font-display text-3xl font-semibold">360° Comparison</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Benchmark-uri industrie și snapshot-uri lunare. PDF Board Report în Val 3.
-        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={loadDepartments} disabled={loadingDept} className="gap-2">
+            <RefreshCw className={`h-4 w-4 ${loadingDept ? "animate-spin" : ""}`} /> Refresh date
+          </Button>
+          <Button
+            variant="outline"
+            onClick={generateAiReport}
+            disabled={aiLoading}
+            className="gap-2 border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
+          >
+            <Sparkles className={`h-4 w-4 ${aiLoading ? "animate-pulse" : ""}`} />
+            {aiLoading ? "AI generează…" : report ? "Regenerează AI" : "Generează AI summary"}
+          </Button>
+          <Button
+            onClick={downloadPdf}
+            disabled={pdfLoading || loadingDept}
+            className="gap-2 bg-gradient-primary text-primary-foreground"
+          >
+            <FileDown className="h-4 w-4" />
+            Export PDF
+          </Button>
+        </div>
       </header>
 
-      <Tabs defaultValue="benchmarks">
+      <Tabs defaultValue="overview">
         <TabsList className="bg-card/60">
+          <TabsTrigger value="overview">360° Overview</TabsTrigger>
+          <TabsTrigger value="ai">AI Weekly Summary</TabsTrigger>
           <TabsTrigger value="benchmarks">Benchmarks</TabsTrigger>
-          <TabsTrigger value="snapshots">Snapshots lunare</TabsTrigger>
+          <TabsTrigger value="snapshots">Snapshots</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="overview" className="mt-6">
+          {loadingDept ? (
+            <Card className="p-12 text-center text-sm text-muted-foreground">Se încarcă datele…</Card>
+          ) : (
+            <DepartmentComparison departments={departments} />
+          )}
+        </TabsContent>
+
+        <TabsContent value="ai" className="mt-6">
+          <WeeklySummary report={report} loading={aiLoading} generatedAt={generatedAt} />
+        </TabsContent>
 
         <TabsContent value="benchmarks" className="mt-6 space-y-4">
           <div className="flex justify-end">
@@ -125,8 +228,8 @@ export default function ReportsPage() {
             <TrendingUp className="h-10 w-10 text-primary opacity-60" />
             <h3 className="font-display text-lg font-semibold">Snapshots lunare — Val 3</h3>
             <p className="max-w-md text-sm text-muted-foreground">
-              Vor stoca automat la finalul fiecărei luni: PACE score, financials, OKR completion, marketing performance.
-              Comparație lună-pe-lună cu export PDF Board Report.
+              Vor stoca automat la finalul fiecărei luni: PACE score, financials, OKR completion, marketing
+              performance. Comparație lună-pe-lună cu export PDF Board Report.
             </p>
           </Card>
         </TabsContent>
