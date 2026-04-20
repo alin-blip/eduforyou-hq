@@ -161,6 +161,23 @@ export default function TeamsPage() {
     }
   };
 
+  const handleChangeRole = async (userId: string, newRole: AppRole) => {
+    try {
+      await setRoles.mutateAsync({ userId, roles: [newRole] });
+      toast.success("Rol actualizat");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la schimbarea rolului");
+    }
+  };
+
+    try {
+      await deleteDept.mutateAsync(id);
+      toast.success("Departament șters");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
