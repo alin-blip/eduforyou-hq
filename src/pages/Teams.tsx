@@ -22,11 +22,19 @@ import {
   useDepartmentsList,
   useDeleteDepartment,
   useTeamAuthStatus,
+  useSetUserRoles,
   type AppRole,
   type AuthStatusRow,
   type Department,
   type ProfileWithRoles,
 } from "@/hooks/useTeams";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { MemberDialog } from "@/components/teams/MemberDialog";
 import { DepartmentDialog } from "@/components/teams/DepartmentDialog";
