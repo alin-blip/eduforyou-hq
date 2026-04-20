@@ -424,3 +424,40 @@ const footer = {
   padding: '16px 32px',
   margin: 0,
 }
+
+// Sparkline styles
+const sparklineCard = {
+  backgroundColor: '#f8fafc',
+  border: '1px solid #e2e8f0',
+  borderRadius: '8px',
+  padding: '14px 16px',
+}
+const sparklineHeader = { display: 'block', marginBottom: '4px' }
+const sparklineValue = {
+  fontSize: '24px',
+  fontWeight: 700,
+  color: '#0f172a',
+  margin: 0,
+  display: 'inline-block',
+}
+const sparklineDeltaUp = {
+  fontSize: '12px',
+  fontWeight: 700,
+  color: '#10b981',
+  margin: '0 0 0 10px',
+  display: 'inline-block',
+}
+const sparklineDeltaDown = {
+  fontSize: '12px',
+  fontWeight: 700,
+  color: '#ef4444',
+  margin: '0 0 0 10px',
+  display: 'inline-block',
+}
+const sparklineFooter = { display: 'block', marginTop: '4px' }
+const sparklineFooterText = {
+  fontSize: '10px',
+  color: '#94a3b8',
+  margin: 0,
+  display: 'inline-block',
+}
