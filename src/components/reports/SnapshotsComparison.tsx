@@ -132,12 +132,20 @@ export function SnapshotsComparison() {
         <h3 className="font-display text-lg font-semibold mb-2">Niciun snapshot încă</h3>
         <p className="mb-4 text-sm text-muted-foreground max-w-md mx-auto">
           Snapshot-urile lunare se capturează automat pe 1 ale lunii la 02:00 UTC.
-          Poți captura unul manual acum pentru luna trecută.
+          Poți captura unul manual acum sau backfill ultimele 12 luni.
         </p>
-        <Button onClick={captureNow} disabled={capturing} className="gap-2 bg-gradient-primary">
-          <Camera className={`h-4 w-4 ${capturing ? "animate-pulse" : ""}`} />
-          {capturing ? "Capturez…" : "Capturează snapshot acum"}
-        </Button>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button onClick={captureNow} disabled={capturing || backfilling} className="gap-2 bg-gradient-primary">
+            <Camera className={`h-4 w-4 ${capturing ? "animate-pulse" : ""}`} />
+            {capturing ? "Capturez…" : "Capturează acum"}
+          </Button>
+          {canBackfill && (
+            <Button onClick={backfillHistory} disabled={backfilling || capturing} variant="outline" className="gap-2">
+              <History className={`h-4 w-4 ${backfilling ? "animate-pulse" : ""}`} />
+              {backfilling ? `Backfill ${backfillProgress.done}/${backfillProgress.total}…` : "Backfill 12 luni"}
+            </Button>
+          )}
+        </div>
       </Card>
     );
   }
