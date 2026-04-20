@@ -118,6 +118,14 @@ export function useProjects() {
     await refresh();
   };
 
+  const syncMetrics = async () => {
+    const { data, error } = await supabase.rpc("sync_project_metrics" as any);
+    if (error) return toast.error(error.message);
+    if ((data as any)?.error === "forbidden") return toast.error("Doar managerii pot sincroniza metricile");
+    toast.success(`Sincronizat: ${(data as any)?.synced ?? 0} metrici actualizate`);
+    await refresh();
+  };
+
   return {
     projects,
     metrics,
@@ -128,5 +136,6 @@ export function useProjects() {
     deleteProject,
     upsertMetric,
     deleteMetric,
+    syncMetrics,
   };
 }
