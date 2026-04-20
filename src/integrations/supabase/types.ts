@@ -523,6 +523,104 @@ export type Database = {
           },
         ]
       }
+      tasks: {
+        Row: {
+          assignee_id: string | null
+          completed_at: string | null
+          created_at: string
+          department_id: string | null
+          description: string | null
+          due_date: string | null
+          entity_id: string | null
+          estimated_hours: number | null
+          id: string
+          key_result_id: string | null
+          logged_hours: number | null
+          objective_id: string | null
+          position: number
+          priority: Database["public"]["Enums"]["task_priority"]
+          reporter_id: string | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          department_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          entity_id?: string | null
+          estimated_hours?: number | null
+          id?: string
+          key_result_id?: string | null
+          logged_hours?: number | null
+          objective_id?: string | null
+          position?: number
+          priority?: Database["public"]["Enums"]["task_priority"]
+          reporter_id?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["task_status"]
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          department_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          entity_id?: string | null
+          estimated_hours?: number | null
+          id?: string
+          key_result_id?: string | null
+          logged_hours?: number | null
+          objective_id?: string | null
+          position?: number
+          priority?: Database["public"]["Enums"]["task_priority"]
+          reporter_id?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["task_status"]
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_key_result_id_fkey"
+            columns: ["key_result_id"]
+            isOneToOne: false
+            referencedRelation: "key_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -652,6 +750,8 @@ export type Database = {
         | "off_track"
         | "completed"
         | "archived"
+      task_priority: "low" | "medium" | "high" | "urgent"
+      task_status: "todo" | "in_progress" | "blocked" | "done"
       tree_type: "value" | "profit" | "kpi"
     }
     CompositeTypes: {
@@ -792,6 +892,8 @@ export const Constants = {
         "completed",
         "archived",
       ],
+      task_priority: ["low", "medium", "high", "urgent"],
+      task_status: ["todo", "in_progress", "blocked", "done"],
       tree_type: ["value", "profit", "kpi"],
     },
   },
