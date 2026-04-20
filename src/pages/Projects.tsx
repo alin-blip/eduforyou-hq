@@ -8,6 +8,7 @@ import { useProjects, type Project } from "@/hooks/useProjects";
 import { ProjectCard } from "@/components/projects/ProjectCard";
 import { ProjectDialog } from "@/components/projects/ProjectDialog";
 import { MetricsDialog } from "@/components/projects/MetricsDialog";
+import { SyncHistory } from "@/components/projects/SyncHistory";
 
 export default function ProjectsPage() {
   const { projects, metrics, loading, syncMetrics } = useProjects();
@@ -16,6 +17,7 @@ export default function ProjectsPage() {
   const [selected, setSelected] = useState<Project | null>(null);
   const [filter, setFilter] = useState<string>("all");
   const [syncing, setSyncing] = useState(false);
+  const [syncRefresh, setSyncRefresh] = useState(0);
 
   const metricsByProject = useMemo(() => {
     const map = new Map<string, typeof metrics>();
@@ -47,7 +49,12 @@ export default function ProjectsPage() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={async () => { setSyncing(true); await syncMetrics(); setSyncing(false); }}
+            onClick={async () => {
+              setSyncing(true);
+              await syncMetrics();
+              setSyncing(false);
+              setSyncRefresh((k) => k + 1);
+            }}
             disabled={syncing}
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
@@ -140,6 +147,8 @@ export default function ProjectsPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      <SyncHistory refreshKey={syncRefresh} />
 
       <ProjectDialog open={dialogOpen} onOpenChange={setDialogOpen} project={selected} />
       <MetricsDialog
