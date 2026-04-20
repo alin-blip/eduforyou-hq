@@ -1297,6 +1297,7 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       sync_project_metrics: { Args: never; Returns: Json }
+      sync_project_metrics_internal: { Args: never; Returns: Json }
     }
     Enums: {
       app_role: "ceo" | "executive" | "manager" | "member"
