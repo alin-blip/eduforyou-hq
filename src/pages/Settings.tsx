@@ -57,6 +57,76 @@ export default function SettingsPage() {
     }
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // reset to allow re-uploading same file
+    if (!file || !user) return;
+
+    if (!file.type.startsWith("image/")) return toast.error("Doar imagini sunt permise");
+    if (file.size > 5 * 1024 * 1024) return toast.error("Imagine prea mare (max 5MB)");
+
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type,
+      });
+      if (upErr) throw upErr;
+
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const newUrl = urlData.publicUrl;
+
+      // Try to clean up the old avatar (best-effort)
+      const oldUrl = profile.avatar_url;
+      if (oldUrl && oldUrl.includes("/avatars/")) {
+        const marker = `/avatars/`;
+        const idx = oldUrl.indexOf(marker);
+        if (idx >= 0) {
+          const oldPath = oldUrl.substring(idx + marker.length).split("?")[0];
+          if (oldPath.startsWith(`${user.id}/`)) {
+            await supabase.storage.from("avatars").remove([oldPath]);
+          }
+        }
+      }
+
+      const next = { ...profile, avatar_url: newUrl };
+      setProfile(next);
+      await updateProfile.mutateAsync({ id: user.id, patch: { avatar_url: newUrl } });
+      toast.success("Avatar actualizat");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Eroare la upload");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleAvatarDelete = async () => {
+    if (!user || !profile.avatar_url) return;
+    if (!confirm("Ștergi avatarul curent?")) return;
+
+    try {
+      const oldUrl = profile.avatar_url;
+      const marker = `/avatars/`;
+      const idx = oldUrl.indexOf(marker);
+      if (idx >= 0) {
+        const oldPath = oldUrl.substring(idx + marker.length).split("?")[0];
+        if (oldPath.startsWith(`${user.id}/`)) {
+          await supabase.storage.from("avatars").remove([oldPath]);
+        }
+      }
+      const next = { ...profile, avatar_url: "" };
+      setProfile(next);
+      await updateProfile.mutateAsync({ id: user.id, patch: { avatar_url: null } });
+      toast.success("Avatar șters");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Eroare la ștergere");
+    }
+  };
+
   const handleChangePassword = async () => {
     if (pwd.next.length < 8) return toast.error("Minim 8 caractere");
     if (pwd.next !== pwd.confirm) return toast.error("Parolele nu se potrivesc");
