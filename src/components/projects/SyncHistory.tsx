@@ -78,7 +78,7 @@ export function SyncHistory({ refreshKey = 0 }: { refreshKey?: number }) {
                 <tr key={e.id} className="border-b border-border/30 last:border-0">
                   <td className="py-2 pr-3">
                     {e.success ? (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                      <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
                     ) : (
                       <XCircle className="h-3.5 w-3.5 text-destructive" />
                     )}
@@ -107,7 +107,7 @@ export function SyncHistory({ refreshKey = 0 }: { refreshKey?: number }) {
                         {e.error_message}
                       </span>
                     ) : (
-                      <span className="text-emerald-600/80">OK</span>
+                      <span className="text-accent">OK</span>
                     )}
                   </td>
                 </tr>
