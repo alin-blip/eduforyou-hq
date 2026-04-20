@@ -77,7 +77,14 @@ Deno.serve(async (req) => {
     }
 
     // Send Supabase invite (triggers handle_new_user → creates profile + default member role)
-    const redirectTo = `${req.headers.get("origin") ?? ""}/auth`;
+    // Prefer explicit PUBLIC_SITE_URL, fallback to request origin
+    const publicSiteUrl = Deno.env.get("PUBLIC_SITE_URL");
+    const origin = req.headers.get("origin") ?? "";
+    // Avoid using preview/sandbox URLs for invite links
+    const isPreviewOrigin = /lovable\.app|lovableproject\.com|localhost/i.test(origin);
+    const baseUrl = publicSiteUrl || (isPreviewOrigin ? "https://hq.eduforyou.co.uk" : origin);
+    const redirectTo = `${baseUrl.replace(/\/$/, "")}/auth`;
+
     const { data: inviteData, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(payload.email, {
       data: { full_name: payload.full_name },
       redirectTo,
