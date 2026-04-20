@@ -1455,6 +1455,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      notify_upcoming_meetings: { Args: never; Returns: Json }
       sync_project_metrics: { Args: never; Returns: Json }
       sync_project_metrics_internal: { Args: never; Returns: Json }
     }
