@@ -170,13 +170,6 @@ export default function TeamsPage() {
     }
   };
 
-    try {
-      await deleteDept.mutateAsync(id);
-      toast.success("Departament șters");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Eroare");
-    }
-  };
 
   return (
     <div className="space-y-6">
