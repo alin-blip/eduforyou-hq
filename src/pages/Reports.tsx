@@ -37,7 +37,8 @@ const PERIOD_LABELS: Record<PeriodMonths, string> = {
 };
 
 export default function ReportsPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, roles } = useAuth();
+  const canSendEmail = roles.includes("ceo") || roles.includes("executive");
   const [benchmarks, setBenchmarks] = useState<Benchmark[]>([]);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState({ metric: "", industry: "EdTech", value: 0, unit: "", source: "" });
@@ -48,6 +49,7 @@ export default function ReportsPage() {
   const [report, setReport] = useState<WeeklyReport | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [emailPreviewOpen, setEmailPreviewOpen] = useState(false);
 
