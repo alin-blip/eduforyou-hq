@@ -207,7 +207,28 @@ export default function TeamsPage() {
           <WorkloadView members={members} />
         </TabsContent>
 
-        <TabsContent value="org">
+        <TabsContent value="org" className="space-y-4">
+          {isAdmin && (
+            <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2">
+              <div className="flex items-center gap-2 text-sm flex-wrap">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Filtru:</span>
+                <Button
+                  size="sm"
+                  variant={pendingOnly ? "default" : "outline"}
+                  onClick={() => setPendingOnly((v) => !v)}
+                >
+                  Doar în așteptare
+                  <Badge variant="secondary" className="ml-2">{pendingCount}</Badge>
+                </Button>
+                {pendingOnly && (
+                  <Button size="sm" variant="ghost" onClick={() => setPendingOnly(false)}>
+                    Resetează
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
       {isLoading ? (
         <p className="text-muted-foreground">Se încarcă echipele...</p>
       ) : (
