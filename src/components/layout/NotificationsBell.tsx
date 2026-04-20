@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, Check, CheckCheck, Trash2, AlertTriangle, Calendar, Target, RefreshCw, UserPlus, Info } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import { ro } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Sheet,
   SheetContent,
@@ -40,10 +41,34 @@ const severityBg = {
   critical: "bg-destructive/10",
 } as const;
 
+type FilterTab = "all" | "unread";
+
+function groupNotifications(items: Notification[]) {
+  const groups: { label: string; items: Notification[] }[] = [
+    { label: "Astăzi", items: [] },
+    { label: "Ieri", items: [] },
+    { label: "Mai vechi", items: [] },
+  ];
+  for (const n of items) {
+    const d = new Date(n.created_at);
+    if (isToday(d)) groups[0].items.push(n);
+    else if (isYesterday(d)) groups[1].items.push(n);
+    else groups[2].items.push(n);
+  }
+  return groups.filter((g) => g.items.length > 0);
+}
+
 export function NotificationsBell() {
   const { notifications, unreadCount, markRead, markAllRead, remove } = useNotifications();
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<FilterTab>("all");
   const navigate = useNavigate();
+
+  const filtered = useMemo(() => {
+    return tab === "unread" ? notifications.filter((n) => !n.read) : notifications;
+  }, [notifications, tab]);
+
+  const grouped = useMemo(() => groupNotifications(filtered), [filtered]);
 
   const handleClick = async (n: Notification) => {
     if (!n.read) await markRead(n.id);
@@ -78,79 +103,98 @@ export function NotificationsBell() {
           <SheetDescription className="text-xs">
             {unreadCount > 0 ? `${unreadCount} necitite` : "Toate citite"}
           </SheetDescription>
+          <Tabs value={tab} onValueChange={(v) => setTab(v as FilterTab)} className="mt-2">
+            <TabsList className="h-8 w-full bg-muted/30">
+              <TabsTrigger value="all" className="h-6 flex-1 text-xs">
+                Toate ({notifications.length})
+              </TabsTrigger>
+              <TabsTrigger value="unread" className="h-6 flex-1 text-xs">
+                Necitite ({unreadCount})
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </SheetHeader>
 
         <ScrollArea className="flex-1">
-          {notifications.length === 0 ? (
+          {filtered.length === 0 ? (
             <div className="flex h-64 flex-col items-center justify-center gap-2 text-muted-foreground">
               <Bell className="h-8 w-8 opacity-30" />
-              <p className="text-sm">Nicio notificare</p>
+              <p className="text-sm">{tab === "unread" ? "Nicio notificare necitită" : "Nicio notificare"}</p>
             </div>
           ) : (
-            <ul className="divide-y divide-border/40">
-              {notifications.map((n) => {
-                const Icon = kindIcon[n.kind] ?? Info;
-                const isCritical = n.severity === "critical";
-                return (
-                  <li
-                    key={n.id}
-                    className={cn(
-                      "group relative flex gap-3 p-4 transition-colors hover:bg-muted/30",
-                      !n.read && "bg-primary/[0.03]",
-                    )}
-                  >
-                    <button
-                      onClick={() => handleClick(n)}
-                      className="flex flex-1 items-start gap-3 text-left"
-                    >
-                      <div
-                        className={cn(
-                          "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-                          severityBg[n.severity],
-                        )}
-                      >
-                        {isCritical ? (
-                          <AlertTriangle className={cn("h-4 w-4", severityColor[n.severity])} />
-                        ) : (
-                          <Icon className={cn("h-4 w-4", severityColor[n.severity])} />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <p
-                            className={cn(
-                              "line-clamp-2 text-sm leading-snug",
-                              !n.read ? "font-semibold text-foreground" : "text-muted-foreground",
-                            )}
+            <div>
+              {grouped.map((group) => (
+                <div key={group.label}>
+                  <div className="sticky top-0 z-10 border-b border-border/40 bg-background/95 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground backdrop-blur">
+                    {group.label}
+                  </div>
+                  <ul className="divide-y divide-border/40">
+                    {group.items.map((n) => {
+                      const Icon = kindIcon[n.kind] ?? Info;
+                      const isCritical = n.severity === "critical";
+                      return (
+                        <li
+                          key={n.id}
+                          className={cn(
+                            "group relative flex gap-3 p-4 transition-colors hover:bg-muted/30",
+                            !n.read && "bg-primary/[0.03]",
+                          )}
+                        >
+                          <button
+                            onClick={() => handleClick(n)}
+                            className="flex flex-1 items-start gap-3 text-left"
                           >
-                            {n.title}
-                          </p>
-                          {!n.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />}
-                        </div>
-                        {n.message && (
-                          <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{n.message}</p>
-                        )}
-                        <p className="mt-1 text-[10px] text-muted-foreground">
-                          {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: ro })}
-                        </p>
-                      </div>
-                    </button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        remove(n.id);
-                      }}
-                      className="h-7 w-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-                      aria-label="Șterge"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </li>
-                );
-              })}
-            </ul>
+                            <div
+                              className={cn(
+                                "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                                severityBg[n.severity],
+                              )}
+                            >
+                              {isCritical ? (
+                                <AlertTriangle className={cn("h-4 w-4", severityColor[n.severity])} />
+                              ) : (
+                                <Icon className={cn("h-4 w-4", severityColor[n.severity])} />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <p
+                                  className={cn(
+                                    "line-clamp-2 text-sm leading-snug",
+                                    !n.read ? "font-semibold text-foreground" : "text-muted-foreground",
+                                  )}
+                                >
+                                  {n.title}
+                                </p>
+                                {!n.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />}
+                              </div>
+                              {n.message && (
+                                <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{n.message}</p>
+                              )}
+                              <p className="mt-1 text-[10px] text-muted-foreground">
+                                {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: ro })}
+                              </p>
+                            </div>
+                          </button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              remove(n.id);
+                            }}
+                            className="h-7 w-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                            aria-label="Șterge"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
           )}
         </ScrollArea>
       </SheetContent>
