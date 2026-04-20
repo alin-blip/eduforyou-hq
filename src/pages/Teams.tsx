@@ -21,7 +21,9 @@ import {
   useTeamMembers,
   useDepartmentsList,
   useDeleteDepartment,
+  useTeamAuthStatus,
   type AppRole,
+  type AuthStatusRow,
   type Department,
   type ProfileWithRoles,
 } from "@/hooks/useTeams";
