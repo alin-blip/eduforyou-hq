@@ -176,10 +176,21 @@ Deno.serve(async (req) => {
     } catch { /* default */ }
 
     // 1. Fetch data via SECURITY DEFINER RPCs (using service role — bypasses RLS)
-    const [{ data: finance }, { data: deptPerf }] = await Promise.all([
+    const [{ data: finance }, { data: deptPerf }, { data: snapshots }] = await Promise.all([
       admin.rpc("get_finance_snapshot", { _months: months }),
       admin.rpc("get_department_performance", { _months: months }),
+      admin
+        .from("monthly_snapshots")
+        .select("period, period_start, pace_score")
+        .order("period_start", { ascending: false })
+        .limit(6),
     ]);
+
+    // Build PACE history (oldest → newest, max 6 points)
+    const paceHistory = ((snapshots ?? []) as Array<{ period: string; pace_score: number }>)
+      .slice()
+      .reverse()
+      .map((s) => ({ period: s.period, value: Number(s.pace_score) || 0 }));
 
     const context = {
       finance: {
@@ -367,6 +378,7 @@ Deno.serve(async (req) => {
               underperformer: report.underperformer,
               priorities: report.priorities_next_week,
               pdfUrl,
+              paceHistory,
             },
           },
         });
