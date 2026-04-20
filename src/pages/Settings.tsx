@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Settings as SettingsIcon, User, Building2, Lock, Globe, Upload, Trash2, Loader2 } from "lucide-react";
+import { Settings as SettingsIcon, User, Building2, Lock, Globe, Upload, Trash2, Loader2, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { ReportScheduleCard } from "@/components/settings/ReportScheduleCard";
 
 interface Profile {
   full_name: string | null;
@@ -178,6 +179,7 @@ export default function SettingsPage() {
           <TabsTrigger value="profile"><User className="h-4 w-4 mr-2" />Profil</TabsTrigger>
           <TabsTrigger value="security"><Lock className="h-4 w-4 mr-2" />Securitate</TabsTrigger>
           <TabsTrigger value="preferences"><Globe className="h-4 w-4 mr-2" />Preferințe</TabsTrigger>
+          {isAdmin && <TabsTrigger value="reports"><Mail className="h-4 w-4 mr-2" />Rapoarte</TabsTrigger>}
           {isAdmin && <TabsTrigger value="organization"><Building2 className="h-4 w-4 mr-2" />Organizație</TabsTrigger>}
         </TabsList>
 
