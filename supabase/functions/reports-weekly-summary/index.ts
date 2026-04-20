@@ -28,10 +28,18 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Parse months from body (1, 3, 6, 12)
+    let months = 1;
+    try {
+      const body = await req.json();
+      const requested = Number(body?.months);
+      if ([1, 3, 6, 12].includes(requested)) months = requested;
+    } catch { /* default */ }
+
     // Pull real data via existing SECURITY DEFINER functions
     const [{ data: finance }, { data: deptPerf }] = await Promise.all([
-      userClient.rpc("get_finance_snapshot", { _months: 1 }),
-      userClient.rpc("get_department_performance", { _months: 1 }),
+      userClient.rpc("get_finance_snapshot", { _months: months }),
+      userClient.rpc("get_department_performance", { _months: months }),
     ]);
 
     if (finance?.error === "forbidden" || deptPerf?.error === "forbidden") {
@@ -146,7 +154,7 @@ Deno.serve(async (req) => {
           },
           {
             role: "user",
-            content: `Generează raport săptămânal pe baza acestui snapshot real:\n\n${JSON.stringify(context, null, 2)}`,
+            content: `Generează raport pe ultimele ${months} ${months === 1 ? "lună" : "luni"} pe baza acestui snapshot real:\n\n${JSON.stringify(context, null, 2)}`,
           },
         ],
         tools,
@@ -180,7 +188,7 @@ Deno.serve(async (req) => {
     const report = toolCall ? JSON.parse(toolCall.function.arguments) : {};
 
     return new Response(
-      JSON.stringify({ report, snapshot: context, generated_at: new Date().toISOString() }),
+      JSON.stringify({ report, snapshot: context, months, generated_at: new Date().toISOString() }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
