@@ -54,9 +54,13 @@ function Delta({ current, previous, suffix = "" }: { current: number; previous?:
 }
 
 export function SnapshotsComparison() {
+  const { roles } = useAuth();
+  const canBackfill = roles.includes("ceo") || roles.includes("executive");
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loading, setLoading] = useState(true);
   const [capturing, setCapturing] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillProgress, setBackfillProgress] = useState({ done: 0, total: 0 });
 
   const load = async () => {
     setLoading(true);
@@ -76,6 +80,43 @@ export function SnapshotsComparison() {
       await load();
     }
     setCapturing(false);
+  };
+
+  const backfillHistory = async () => {
+    if (!confirm("Generează snapshot-uri pentru ultimele 12 luni? Cele existente vor fi suprascrise cu datele actuale.")) return;
+    setBackfilling(true);
+    const total = 12;
+    setBackfillProgress({ done: 0, total });
+
+    // Generate target months: last 12 full months (excluding current)
+    const targets: string[] = [];
+    const now = new Date();
+    for (let i = 12; i >= 1; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      targets.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`);
+    }
+
+    let succeeded = 0;
+    let failed = 0;
+    for (let i = 0; i < targets.length; i++) {
+      const { error } = await supabase.rpc("capture_monthly_snapshot", { _target_month: targets[i] });
+      if (error) {
+        failed++;
+        console.error(`Backfill ${targets[i]} failed:`, error.message);
+      } else {
+        succeeded++;
+      }
+      setBackfillProgress({ done: i + 1, total });
+    }
+
+    setBackfilling(false);
+    setBackfillProgress({ done: 0, total: 0 });
+    if (failed === 0) {
+      toast.success(`Backfill complet: ${succeeded} snapshot-uri generate`);
+    } else {
+      toast.warning(`Backfill terminat: ${succeeded} reușite, ${failed} eșuate (vezi console)`);
+    }
+    await load();
   };
 
   useEffect(() => { load(); }, []);
