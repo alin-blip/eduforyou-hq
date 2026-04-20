@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,8 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, CheckCircle2, Circle, AlertTriangle, FileText, Lightbulb, Target } from "lucide-react";
-import { useCicles, useMeetingDetail, type Meeting, type ItemKind, type ItemStatus, type Cadence, type MeetingStatus } from "@/hooks/useCicles";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Plus, Trash2, CheckCircle2, Circle, AlertTriangle, FileText, Lightbulb, Target, UserPlus, Users } from "lucide-react";
+import { useCicles, useMeetingDetail, type Meeting, type ItemKind, type ItemStatus, type Cadence, type MeetingStatus, type ParticipantStatus } from "@/hooks/useCicles";
+import { useTeamMembers } from "@/hooks/useTeams";
 
 const kindIcons: Record<ItemKind, any> = {
   agenda: FileText,
@@ -36,7 +38,28 @@ interface Props {
 
 export function MeetingDialog({ open, onOpenChange, meeting }: Props) {
   const { createMeeting, updateMeeting } = useCicles();
-  const { items, addItem, updateItem, deleteItem } = useMeetingDetail(meeting?.id ?? null);
+  const { items, participants, addItem, updateItem, deleteItem, addParticipant, removeParticipant, updateParticipantStatus } = useMeetingDetail(meeting?.id ?? null);
+  const { data: teamMembers = [] } = useTeamMembers();
+
+  const participantUserIds = useMemo(() => new Set(participants.map((p) => p.user_id)), [participants]);
+  const availableMembers = useMemo(() => teamMembers.filter((m) => !participantUserIds.has(m.id)), [teamMembers, participantUserIds]);
+  const memberById = useMemo(() => new Map(teamMembers.map((m) => [m.id, m])), [teamMembers]);
+
+  const [newParticipantId, setNewParticipantId] = useState<string>("");
+
+  const statusVariant: Record<ParticipantStatus, string> = {
+    invited: "bg-muted text-muted-foreground",
+    confirmed: "bg-primary/15 text-primary",
+    attended: "bg-emerald-500/15 text-emerald-400",
+    missed: "bg-destructive/15 text-destructive",
+  };
+
+  const statusLabel: Record<ParticipantStatus, string> = {
+    invited: "Invitat",
+    confirmed: "Confirmat",
+    attended: "Prezent",
+    missed: "Absent",
+  };
 
   const [title, setTitle] = useState("");
   const [cadence, setCadence] = useState<Cadence>("weekly");
@@ -198,6 +221,82 @@ export function MeetingDialog({ open, onOpenChange, meeting }: Props) {
                             {item.title}
                           </span>
                           <Button variant="ghost" size="icon" onClick={() => deleteItem(item.id)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Users className="h-4 w-4" /> Participanți ({participants.length})
+                  </h3>
+
+                  <div className="flex gap-2 mb-3">
+                    <Select value={newParticipantId} onValueChange={setNewParticipantId}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Adaugă un participant..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableMembers.length === 0 && (
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground">Toți membrii sunt deja adăugați</div>
+                        )}
+                        {availableMembers.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>
+                            {m.full_name ?? m.email ?? "—"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      onClick={async () => {
+                        if (!newParticipantId) return;
+                        await addParticipant(newParticipantId);
+                        setNewParticipantId("");
+                      }}
+                      size="icon"
+                      disabled={!newParticipantId}
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {participants.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">Niciun participant încă.</p>
+                    )}
+                    {participants.map((p) => {
+                      const member = memberById.get(p.user_id);
+                      const initials = (member?.full_name ?? "?").split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
+                      return (
+                        <div key={p.id} className="flex items-center gap-2 p-2 rounded-md border bg-card/50">
+                          <Avatar className="h-7 w-7">
+                            {member?.avatar_url && <AvatarImage src={member.avatar_url} />}
+                            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{member?.full_name ?? "Membru necunoscut"}</p>
+                            {member?.job_title && <p className="text-xs text-muted-foreground truncate">{member.job_title}</p>}
+                          </div>
+                          <Badge variant="outline" className={`text-xs ${statusVariant[p.status]}`}>
+                            {statusLabel[p.status]}
+                          </Badge>
+                          <Select value={p.status} onValueChange={(v) => updateParticipantStatus(p.id, v as ParticipantStatus)}>
+                            <SelectTrigger className="h-8 w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="invited">Invitat</SelectItem>
+                              <SelectItem value="confirmed">Confirmat</SelectItem>
+                              <SelectItem value="attended">Prezent</SelectItem>
+                              <SelectItem value="missed">Absent</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button variant="ghost" size="icon" onClick={() => removeParticipant(p.id)}>
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
