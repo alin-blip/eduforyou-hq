@@ -40,7 +40,23 @@ export function SyncAlert() {
   useEffect(() => {
     load();
     const interval = setInterval(load, 5 * 60 * 1000);
-    return () => clearInterval(interval);
+
+    // Realtime: refresh immediately when a new sync log row arrives
+    const channel = supabase
+      .channel("sync-log-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "project_sync_log" },
+        () => {
+          load();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   if (state.kind === "ok") return null;
