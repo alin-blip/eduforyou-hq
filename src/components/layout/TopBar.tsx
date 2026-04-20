@@ -15,6 +15,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useCopilot } from "@/hooks/useCopilot";
 import { EntitySwitcher } from "./EntitySwitcher";
+import { SyncAlert } from "./SyncAlert";
 
 const roleLabel: Record<string, string> = {
   ceo: "CEO",
@@ -52,6 +53,8 @@ export function TopBar() {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
+        <SyncAlert />
+
         <Button
           size="sm"
           variant="outline"
