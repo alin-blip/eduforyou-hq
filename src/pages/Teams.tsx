@@ -22,11 +22,19 @@ import {
   useDepartmentsList,
   useDeleteDepartment,
   useTeamAuthStatus,
+  useSetUserRoles,
   type AppRole,
   type AuthStatusRow,
   type Department,
   type ProfileWithRoles,
 } from "@/hooks/useTeams";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { MemberDialog } from "@/components/teams/MemberDialog";
 import { DepartmentDialog } from "@/components/teams/DepartmentDialog";
@@ -63,6 +71,7 @@ export default function TeamsPage() {
   const { data: departments = [] } = useDepartmentsList();
   const { data: authStatus } = useTeamAuthStatus();
   const deleteDept = useDeleteDepartment();
+  const setRoles = useSetUserRoles();
 
   const [memberDialog, setMemberDialog] = useState<ProfileWithRoles | null>(null);
   const [deptDialog, setDeptDialog] = useState<Department | null>(null);
@@ -151,6 +160,16 @@ export default function TeamsPage() {
       toast.error(e instanceof Error ? e.message : "Eroare");
     }
   };
+
+  const handleChangeRole = async (userId: string, newRole: AppRole) => {
+    try {
+      await setRoles.mutateAsync({ userId, roles: [newRole] });
+      toast.success("Rol actualizat");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare la schimbarea rolului");
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -279,7 +298,7 @@ export default function TeamsPage() {
                     <p className="text-sm text-muted-foreground italic">Niciun membru în acest departament.</p>
                   ) : (
                     <div className="space-y-2">
-                      {deptMembers.map((m) => <MemberRow key={m.id} member={m} status={authStatus?.get(m.id)} onClick={() => setMemberDialog(m)} onResend={handleResendOne} resending={resendingEmail === m.email} />)}
+                      {deptMembers.map((m) => <MemberRow key={m.id} member={m} status={authStatus?.get(m.id)} onClick={() => setMemberDialog(m)} onResend={handleResendOne} resending={resendingEmail === m.email} canEditRoles={isAdmin} onChangeRole={handleChangeRole} savingRole={setRoles.isPending} />)}
                     </div>
                   )}
                 </CardContent>
@@ -298,7 +317,7 @@ export default function TeamsPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 {grouped.get("__unassigned__")!.map((m) => (
-                  <MemberRow key={m.id} member={m} status={authStatus?.get(m.id)} onClick={() => setMemberDialog(m)} onResend={handleResendOne} resending={resendingEmail === m.email} />
+                  <MemberRow key={m.id} member={m} status={authStatus?.get(m.id)} onClick={() => setMemberDialog(m)} onResend={handleResendOne} resending={resendingEmail === m.email} canEditRoles={isAdmin} onChangeRole={handleChangeRole} savingRole={setRoles.isPending} />
                 ))}
               </CardContent>
             </Card>
@@ -329,12 +348,18 @@ function MemberRow({
   onClick,
   onResend,
   resending,
+  canEditRoles,
+  onChangeRole,
+  savingRole,
 }: {
   member: ProfileWithRoles;
   status?: AuthStatusRow;
   onClick: () => void;
   onResend?: (email: string) => void | Promise<void>;
   resending?: boolean;
+  canEditRoles?: boolean;
+  onChangeRole?: (userId: string, role: AppRole) => void | Promise<void>;
+  savingRole?: boolean;
 }) {
   const role = topRole(member.roles);
   const meta = ROLE_META[role];
@@ -390,9 +415,35 @@ function MemberRow({
         <Badge variant={statusVariant} className="hidden md:inline-flex" title={statusTitle}>
           {statusLabel}
         </Badge>
-        <Badge variant={meta.variant} className="gap-1">
-          <Icon className="h-3 w-3" /> {meta.label}
-        </Badge>
+        {canEditRoles && onChangeRole ? (
+          <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+            <Select
+              value={role}
+              onValueChange={(v) => onChangeRole(member.id, v as AppRole)}
+              disabled={savingRole}
+            >
+              <SelectTrigger className="h-8 w-[120px] text-xs" title="Schimbă rolul">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(ROLE_META) as AppRole[]).map((r) => {
+                  const RIcon = ROLE_META[r].icon;
+                  return (
+                    <SelectItem key={r} value={r}>
+                      <span className="flex items-center gap-2">
+                        <RIcon className="h-3 w-3" /> {ROLE_META[r].label}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : (
+          <Badge variant={meta.variant} className="gap-1">
+            <Icon className="h-3 w-3" /> {meta.label}
+          </Badge>
+        )}
         {isPending && onResend && member.email && (
           <Button
             size="sm"
