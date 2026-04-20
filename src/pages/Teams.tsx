@@ -125,14 +125,20 @@ export default function TeamsPage() {
 
   const grouped = useMemo(() => {
     const map = new Map<string, ProfileWithRoles[]>();
-    members.forEach((m) => {
+    const filtered = pendingOnly ? members.filter((m) => isPending(m.id)) : members;
+    filtered.forEach((m) => {
       const key = m.department_id ?? "__unassigned__";
       const arr = map.get(key) ?? [];
       arr.push(m);
       map.set(key, arr);
     });
     return map;
-  }, [members]);
+  }, [members, pendingOnly, authStatus]);
+
+  const pendingCount = useMemo(
+    () => members.filter((m) => isPending(m.id)).length,
+    [members, authStatus]
+  );
 
   const totalCost = members.reduce((sum, m) => sum + (Number(m.monthly_cost) || 0), 0);
   const totalCapacity = members.reduce((sum, m) => sum + (m.weekly_capacity_hours ?? 0), 0);
