@@ -271,10 +271,33 @@ export default function TeamsPage() {
   );
 }
 
-function MemberRow({ member, onClick }: { member: ProfileWithRoles; onClick: () => void }) {
+function MemberRow({ member, status, onClick }: { member: ProfileWithRoles; status?: AuthStatusRow; onClick: () => void }) {
   const role = topRole(member.roles);
   const meta = ROLE_META[role];
   const Icon = meta.icon;
+
+  // Derive auth status
+  let statusLabel = "Necunoscut";
+  let statusVariant: "default" | "secondary" | "outline" | "destructive" = "outline";
+  let statusTitle = "Status auth indisponibil";
+  if (status) {
+    if (status.last_sign_in_at) {
+      statusLabel = "Activ";
+      statusVariant = "default";
+      statusTitle = `Ultima logare: ${new Date(status.last_sign_in_at).toLocaleString("ro-RO")}`;
+    } else if (status.email_confirmed_at) {
+      statusLabel = "Confirmat";
+      statusVariant = "secondary";
+      statusTitle = `Email confirmat: ${new Date(status.email_confirmed_at).toLocaleString("ro-RO")} — încă nu s-a logat`;
+    } else {
+      statusLabel = "În așteptare";
+      statusVariant = "outline";
+      statusTitle = status.invited_at
+        ? `Invitat: ${new Date(status.invited_at).toLocaleString("ro-RO")} — email neconfirmat`
+        : "Email neconfirmat";
+    }
+  }
+
   return (
     <button
       onClick={onClick}
@@ -294,6 +317,9 @@ function MemberRow({ member, onClick }: { member: ProfileWithRoles; onClick: () 
         {member.monthly_cost != null && (
           <span className="text-xs text-muted-foreground hidden sm:inline">€{Number(member.monthly_cost).toLocaleString("ro-RO")}</span>
         )}
+        <Badge variant={statusVariant} className="hidden md:inline-flex" title={statusTitle}>
+          {statusLabel}
+        </Badge>
         <Badge variant={meta.variant} className="gap-1">
           <Icon className="h-3 w-3" /> {meta.label}
         </Badge>
