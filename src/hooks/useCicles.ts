@@ -171,5 +171,11 @@ export function useMeetingDetail(meetingId: string | null) {
     await refresh();
   };
 
-  return { items, participants, loading, refresh, addItem, updateItem, deleteItem, addParticipant, removeParticipant };
+  const updateParticipantStatus = async (id: string, status: ParticipantStatus) => {
+    const { error } = await supabase.from("meeting_participants").update({ status } as any).eq("id", id);
+    if (error) return toast.error(error.message);
+    await refresh();
+  };
+
+  return { items, participants, loading, refresh, addItem, updateItem, deleteItem, addParticipant, removeParticipant, updateParticipantStatus };
 }
