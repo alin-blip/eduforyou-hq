@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Settings as SettingsIcon, User, Building2, Lock, Globe } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Settings as SettingsIcon, User, Building2, Lock, Globe, Upload, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
