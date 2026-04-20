@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { CheckSquare, Plus, KanbanSquare, List, Calendar as CalendarIcon, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +28,7 @@ import { TaskCalendar } from "@/components/tasks/TaskCalendar";
 import { TaskDialog } from "@/components/tasks/TaskDialog";
 
 export default function TasksPage() {
+  const qc = useQueryClient();
   const [filters, setFilters] = useState<TaskFilters>({});
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -64,6 +67,23 @@ export default function TasksPage() {
     setEditing(t);
     setDialogOpen(true);
   };
+
+  // Realtime: live updates on task changes (kanban moves, edits, deletes)
+  useEffect(() => {
+    const channel = supabase
+      .channel("tasks-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tasks" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["tasks"] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
 
   return (
     <div className="space-y-6">
