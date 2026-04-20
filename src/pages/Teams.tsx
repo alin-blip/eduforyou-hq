@@ -298,7 +298,7 @@ export default function TeamsPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 {grouped.get("__unassigned__")!.map((m) => (
-                  <MemberRow key={m.id} member={m} status={authStatus?.get(m.id)} onClick={() => setMemberDialog(m)} />
+                  <MemberRow key={m.id} member={m} status={authStatus?.get(m.id)} onClick={() => setMemberDialog(m)} onResend={handleResendOne} resending={resendingEmail === m.email} />
                 ))}
               </CardContent>
             </Card>
