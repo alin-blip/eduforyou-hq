@@ -323,7 +323,19 @@ export default function TeamsPage() {
   );
 }
 
-function MemberRow({ member, status, onClick }: { member: ProfileWithRoles; status?: AuthStatusRow; onClick: () => void }) {
+function MemberRow({
+  member,
+  status,
+  onClick,
+  onResend,
+  resending,
+}: {
+  member: ProfileWithRoles;
+  status?: AuthStatusRow;
+  onClick: () => void;
+  onResend?: (email: string) => void | Promise<void>;
+  resending?: boolean;
+}) {
   const role = topRole(member.roles);
   const meta = ROLE_META[role];
   const Icon = meta.icon;
@@ -332,15 +344,18 @@ function MemberRow({ member, status, onClick }: { member: ProfileWithRoles; stat
   let statusLabel = "Necunoscut";
   let statusVariant: "default" | "secondary" | "outline" | "destructive" = "outline";
   let statusTitle = "Status auth indisponibil";
+  let isPending = true;
   if (status) {
     if (status.last_sign_in_at) {
       statusLabel = "Activ";
       statusVariant = "default";
       statusTitle = `Ultima logare: ${new Date(status.last_sign_in_at).toLocaleString("ro-RO")}`;
+      isPending = false;
     } else if (status.email_confirmed_at) {
       statusLabel = "Confirmat";
       statusVariant = "secondary";
       statusTitle = `Email confirmat: ${new Date(status.email_confirmed_at).toLocaleString("ro-RO")} — încă nu s-a logat`;
+      isPending = false;
     } else {
       statusLabel = "În așteptare";
       statusVariant = "outline";
@@ -351,9 +366,12 @@ function MemberRow({ member, status, onClick }: { member: ProfileWithRoles; stat
   }
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="flex w-full items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2 text-left hover:bg-muted/50 transition-colors"
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
+      className="flex w-full items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2 text-left hover:bg-muted/50 transition-colors cursor-pointer"
     >
       <div className="flex items-center gap-3 min-w-0">
         <Avatar className="h-9 w-9">
@@ -375,7 +393,19 @@ function MemberRow({ member, status, onClick }: { member: ProfileWithRoles; stat
         <Badge variant={meta.variant} className="gap-1">
           <Icon className="h-3 w-3" /> {meta.label}
         </Badge>
+        {isPending && onResend && member.email && (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={resending}
+            onClick={(e) => { e.stopPropagation(); onResend(member.email as string); }}
+            title="Retrimite invitația"
+          >
+            <Send className="h-3.5 w-3.5 sm:mr-1.5" />
+            <span className="hidden sm:inline">{resending ? "..." : "Retrimite"}</span>
+          </Button>
+        )}
       </div>
-    </button>
+    </div>
   );
 }
