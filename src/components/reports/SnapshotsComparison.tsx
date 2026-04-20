@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Camera, RefreshCw, TrendingUp, TrendingDown, Minus, History } from "lucide-react";
+import { Camera, RefreshCw, TrendingUp, TrendingDown, Minus, History, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import {
   LineChart,
@@ -34,7 +34,27 @@ export type Snapshot = {
   tasks_created: number;
   completion_rate: number;
   pace_score: number;
+  departments?: Array<{
+    name: string;
+    completion_rate?: number;
+    avg_progress?: number;
+    tasks_done?: number;
+  }> | null;
 };
+
+function pickTopDepartment(s: Snapshot): { name: string; score: number; completion: number; okr: number } | null {
+  if (!s.departments || !Array.isArray(s.departments) || s.departments.length === 0) return null;
+  const ranked = s.departments
+    .map((d) => {
+      const completion = Number(d.completion_rate ?? 0);
+      const okr = Number(d.avg_progress ?? 0);
+      // Composite score: 60% completion + 40% OKR progress
+      const score = completion * 0.6 + okr * 0.4;
+      return { name: d.name, score, completion, okr };
+    })
+    .sort((a, b) => b.score - a.score);
+  return ranked[0] ?? null;
+}
 
 const fmtEur = (n: number) =>
   new Intl.NumberFormat("ro-RO", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
@@ -152,6 +172,7 @@ export function SnapshotsComparison() {
 
   const latest = snapshots[snapshots.length - 1];
   const previous = snapshots.length > 1 ? snapshots[snapshots.length - 2] : undefined;
+  const topDept = pickTopDepartment(latest);
 
   const chartData = snapshots.map((s) => ({
     period: s.period.slice(5), // MM
@@ -198,6 +219,27 @@ export function SnapshotsComparison() {
           </Button>
         </div>
       </div>
+
+      {/* Top department of the month badge */}
+      {topDept && (
+        <Card className="flex items-center gap-4 border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent p-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-500/20">
+            <Trophy className="h-6 w-6 text-amber-500" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-400">
+              🏆 Top departament al lunii · {latest.period}
+            </div>
+            <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className="font-display text-lg font-semibold">{topDept.name}</span>
+              <span className="text-xs text-muted-foreground">
+                Completion <span className="font-mono font-semibold text-foreground">{topDept.completion.toFixed(0)}%</span>
+                {" · "}OKR avg <span className="font-mono font-semibold text-foreground">{topDept.okr.toFixed(0)}%</span>
+              </span>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* MoM KPI cards */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
