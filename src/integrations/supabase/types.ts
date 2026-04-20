@@ -502,6 +502,193 @@ export type Database = {
           },
         ]
       }
+      meeting_items: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          key_result_id: string | null
+          kind: Database["public"]["Enums"]["meeting_item_kind"]
+          meeting_id: string
+          objective_id: string | null
+          owner_id: string | null
+          position: number
+          status: Database["public"]["Enums"]["meeting_item_status"]
+          task_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          key_result_id?: string | null
+          kind?: Database["public"]["Enums"]["meeting_item_kind"]
+          meeting_id: string
+          objective_id?: string | null
+          owner_id?: string | null
+          position?: number
+          status?: Database["public"]["Enums"]["meeting_item_status"]
+          task_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          key_result_id?: string | null
+          kind?: Database["public"]["Enums"]["meeting_item_kind"]
+          meeting_id?: string
+          objective_id?: string | null
+          owner_id?: string | null
+          position?: number
+          status?: Database["public"]["Enums"]["meeting_item_status"]
+          task_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_items_key_result_id_fkey"
+            columns: ["key_result_id"]
+            isOneToOne: false
+            referencedRelation: "key_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_items_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_items_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "objectives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_items_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_participants: {
+        Row: {
+          created_at: string
+          id: string
+          meeting_id: string
+          notes: string | null
+          status: Database["public"]["Enums"]["participant_status"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meeting_id: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["participant_status"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["participant_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_participants_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetings: {
+        Row: {
+          agenda: string | null
+          cadence: Database["public"]["Enums"]["meeting_cadence"]
+          created_at: string
+          created_by: string | null
+          decisions: string | null
+          department_id: string | null
+          duration_minutes: number
+          entity_id: string | null
+          facilitator_id: string | null
+          id: string
+          notes: string | null
+          scheduled_at: string
+          status: Database["public"]["Enums"]["meeting_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agenda?: string | null
+          cadence?: Database["public"]["Enums"]["meeting_cadence"]
+          created_at?: string
+          created_by?: string | null
+          decisions?: string | null
+          department_id?: string | null
+          duration_minutes?: number
+          entity_id?: string | null
+          facilitator_id?: string | null
+          id?: string
+          notes?: string | null
+          scheduled_at?: string
+          status?: Database["public"]["Enums"]["meeting_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agenda?: string | null
+          cadence?: Database["public"]["Enums"]["meeting_cadence"]
+          created_at?: string
+          created_by?: string | null
+          decisions?: string | null
+          department_id?: string | null
+          duration_minutes?: number
+          entity_id?: string | null
+          facilitator_id?: string | null
+          id?: string
+          notes?: string | null
+          scheduled_at?: string
+          status?: Database["public"]["Enums"]["meeting_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetings_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetings_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       objectives: {
         Row: {
           created_at: string
@@ -1006,6 +1193,10 @@ export type Database = {
       invoice_kind: "outgoing" | "incoming"
       invoice_status: "draft" | "sent" | "paid" | "overdue" | "cancelled"
       kr_status: "not_started" | "in_progress" | "completed" | "blocked"
+      meeting_cadence: "daily" | "weekly" | "monthly" | "quarterly"
+      meeting_item_kind: "agenda" | "decision" | "action" | "blocker" | "note"
+      meeting_item_status: "open" | "in_progress" | "done" | "cancelled"
+      meeting_status: "scheduled" | "in_progress" | "completed" | "cancelled"
       objective_level: "company" | "department" | "individual"
       objective_status:
         | "on_track"
@@ -1013,6 +1204,7 @@ export type Database = {
         | "off_track"
         | "completed"
         | "archived"
+      participant_status: "invited" | "confirmed" | "attended" | "missed"
       revenue_status: "planned" | "confirmed" | "received"
       task_priority: "low" | "medium" | "high" | "urgent"
       task_status: "todo" | "in_progress" | "blocked" | "done"
@@ -1165,6 +1357,10 @@ export const Constants = {
       invoice_kind: ["outgoing", "incoming"],
       invoice_status: ["draft", "sent", "paid", "overdue", "cancelled"],
       kr_status: ["not_started", "in_progress", "completed", "blocked"],
+      meeting_cadence: ["daily", "weekly", "monthly", "quarterly"],
+      meeting_item_kind: ["agenda", "decision", "action", "blocker", "note"],
+      meeting_item_status: ["open", "in_progress", "done", "cancelled"],
+      meeting_status: ["scheduled", "in_progress", "completed", "cancelled"],
       objective_level: ["company", "department", "individual"],
       objective_status: [
         "on_track",
@@ -1173,6 +1369,7 @@ export const Constants = {
         "completed",
         "archived",
       ],
+      participant_status: ["invited", "confirmed", "attended", "missed"],
       revenue_status: ["planned", "confirmed", "received"],
       task_priority: ["low", "medium", "high", "urgent"],
       task_status: ["todo", "in_progress", "blocked", "done"],
