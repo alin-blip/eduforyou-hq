@@ -228,6 +228,82 @@ export function MeetingDialog({ open, onOpenChange, meeting }: Props) {
                     })}
                   </div>
                 </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Users className="h-4 w-4" /> Participanți ({participants.length})
+                  </h3>
+
+                  <div className="flex gap-2 mb-3">
+                    <Select value={newParticipantId} onValueChange={setNewParticipantId}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Adaugă un participant..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableMembers.length === 0 && (
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground">Toți membrii sunt deja adăugați</div>
+                        )}
+                        {availableMembers.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>
+                            {m.full_name ?? m.email ?? "—"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      onClick={async () => {
+                        if (!newParticipantId) return;
+                        await addParticipant(newParticipantId);
+                        setNewParticipantId("");
+                      }}
+                      size="icon"
+                      disabled={!newParticipantId}
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {participants.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">Niciun participant încă.</p>
+                    )}
+                    {participants.map((p) => {
+                      const member = memberById.get(p.user_id);
+                      const initials = (member?.full_name ?? "?").split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
+                      return (
+                        <div key={p.id} className="flex items-center gap-2 p-2 rounded-md border bg-card/50">
+                          <Avatar className="h-7 w-7">
+                            {member?.avatar_url && <AvatarImage src={member.avatar_url} />}
+                            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{member?.full_name ?? "Membru necunoscut"}</p>
+                            {member?.job_title && <p className="text-xs text-muted-foreground truncate">{member.job_title}</p>}
+                          </div>
+                          <Badge variant="outline" className={`text-xs ${statusVariant[p.status]}`}>
+                            {statusLabel[p.status]}
+                          </Badge>
+                          <Select value={p.status} onValueChange={(v) => updateParticipantStatus(p.id, v as ParticipantStatus)}>
+                            <SelectTrigger className="h-8 w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="invited">Invitat</SelectItem>
+                              <SelectItem value="confirmed">Confirmat</SelectItem>
+                              <SelectItem value="attended">Prezent</SelectItem>
+                              <SelectItem value="missed">Absent</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button variant="ghost" size="icon" onClick={() => removeParticipant(p.id)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </>
             )}
           </div>
