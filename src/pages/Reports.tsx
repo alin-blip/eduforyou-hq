@@ -119,6 +119,27 @@ export default function ReportsPage() {
     }
   };
 
+  const sendReportEmailNow = async () => {
+    if (!confirm(`Trimit raportul săptămânal acum la CEO + Executive + Manageri (perioada: ${PERIOD_LABELS[period].toLowerCase()})?`)) return;
+    setEmailSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("weekly-report-email", {
+        body: { months: period },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const sent = (data as any)?.sent ?? 0;
+      const total = (data as any)?.total ?? 0;
+      toast.success(`Raport trimis: ${sent}/${total} destinatari`, {
+        description: total === 0 ? "Niciun destinatar (CEO/Executive/Manager)" : undefined,
+      });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Eroare la trimiterea raportului");
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
   const create = async () => {
     if (!draft.metric.trim()) return;
     const { error } = await supabase.from("benchmarks").insert(draft);
