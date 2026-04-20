@@ -44,9 +44,19 @@ export default function ProjectsPage() {
           </h1>
           <p className="text-muted-foreground mt-1">Toate proiectele Lovable din ecosistemul EduForYou cu metrici live.</p>
         </div>
-        <Button onClick={() => { setSelected(null); setDialogOpen(true); }}>
-          <Plus className="h-4 w-4 mr-2" /> Proiect nou
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={async () => { setSyncing(true); await syncMetrics(); setSyncing(false); }}
+            disabled={syncing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
+            Sync metrici
+          </Button>
+          <Button onClick={() => { setSelected(null); setDialogOpen(true); }}>
+            <Plus className="h-4 w-4 mr-2" /> Proiect nou
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
