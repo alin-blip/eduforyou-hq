@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, FolderKanban, Activity, CheckCircle2, FileEdit } from "lucide-react";
+import { Plus, FolderKanban, Activity, CheckCircle2, FileEdit, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
