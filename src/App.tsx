@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { EntityProvider } from "@/hooks/useEntity";
 import { CopilotProvider } from "@/hooks/useCopilot";
+import { NotificationsProvider } from "@/hooks/useNotifications";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { CopilotDrawer } from "@/components/copilot/CopilotDrawer";
@@ -38,8 +39,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <EntityProvider>
-            <CopilotProvider>
-              <Routes>
+            <NotificationsProvider>
+              <CopilotProvider>
+                <Routes>
                 <Route path="/auth" element={<AuthPage />} />
                 <Route
                   element={
@@ -63,10 +65,11 @@ const App = () => (
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                 </Route>
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              <CopilotDrawer />
-            </CopilotProvider>
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+                <CopilotDrawer />
+              </CopilotProvider>
+            </NotificationsProvider>
           </EntityProvider>
         </AuthProvider>
       </BrowserRouter>
