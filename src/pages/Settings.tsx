@@ -35,6 +35,8 @@ export default function SettingsPage() {
   const [locale, setLocale] = useState(() => localStorage.getItem("efy_locale") ?? "ro");
   const [tz, setTz] = useState(() => localStorage.getItem("efy_tz") ?? Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [entityForm, setEntityForm] = useState({ name: "", slug: "", description: "" });
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
