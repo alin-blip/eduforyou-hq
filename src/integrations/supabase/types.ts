@@ -909,6 +909,39 @@ export type Database = {
           },
         ]
       }
+      project_sync_log: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          metrics_synced: number
+          source: string
+          success: boolean
+          triggered_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          metrics_synced?: number
+          source?: string
+          success?: boolean
+          triggered_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          metrics_synced?: number
+          source?: string
+          success?: boolean
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       projects: {
         Row: {
           category: string | null
