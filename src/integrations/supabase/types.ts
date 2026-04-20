@@ -1224,6 +1224,39 @@ export type Database = {
           },
         ]
       }
+      report_schedule: {
+        Row: {
+          active: boolean
+          day_of_week: number
+          hour: number
+          id: number
+          minute: number
+          timezone: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          active?: boolean
+          day_of_week?: number
+          hour?: number
+          id?: number
+          minute?: number
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          active?: boolean
+          day_of_week?: number
+          hour?: number
+          id?: number
+          minute?: number
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       revenue: {
         Row: {
           amount: number
@@ -1559,6 +1592,7 @@ export type Database = {
           job_title: string
         }[]
       }
+      get_weekly_report_schedule: { Args: never; Returns: Json }
       has_any_role: {
         Args: {
           _roles: Database["public"]["Enums"]["app_role"][]
@@ -1594,6 +1628,15 @@ export type Database = {
       }
       sync_project_metrics: { Args: never; Returns: Json }
       sync_project_metrics_internal: { Args: never; Returns: Json }
+      update_weekly_report_schedule: {
+        Args: {
+          _active?: boolean
+          _day_of_week: number
+          _hour: number
+          _minute: number
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "ceo" | "executive" | "manager" | "member"
