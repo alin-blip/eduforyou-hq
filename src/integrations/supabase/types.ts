@@ -602,6 +602,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_departments_directory: {
+        Args: never
+        Returns: {
+          color: string
+          description: string
+          icon: string
+          id: string
+          manager_id: string
+          name: string
+          slug: string
+        }[]
+      }
+      get_team_directory: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          department_id: string
+          full_name: string
+          id: string
+          job_title: string
+        }[]
+      }
       has_any_role: {
         Args: {
           _roles: Database["public"]["Enums"]["app_role"][]
