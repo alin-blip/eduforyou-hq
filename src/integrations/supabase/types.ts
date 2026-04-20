@@ -859,6 +859,131 @@ export type Database = {
           },
         ]
       }
+      project_metrics: {
+        Row: {
+          delta_pct: number | null
+          id: string
+          label: string
+          metric_key: string
+          position: number
+          project_id: string
+          recorded_at: string
+          trend: string | null
+          unit: string | null
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          delta_pct?: number | null
+          id?: string
+          label: string
+          metric_key: string
+          position?: number
+          project_id: string
+          recorded_at?: string
+          trend?: string | null
+          unit?: string | null
+          updated_at?: string
+          value?: number
+        }
+        Update: {
+          delta_pct?: number | null
+          id?: string
+          label?: string
+          metric_key?: string
+          position?: number
+          project_id?: string
+          recorded_at?: string
+          trend?: string | null
+          unit?: string | null
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_metrics_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          category: string | null
+          color: string | null
+          created_at: string
+          created_by: string | null
+          department_id: string | null
+          description: string | null
+          edit_url: string | null
+          entity_id: string | null
+          icon: string | null
+          id: string
+          name: string
+          owner_id: string | null
+          position: number
+          public_url: string | null
+          slug: string
+          status: Database["public"]["Enums"]["project_status"]
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          description?: string | null
+          edit_url?: string | null
+          entity_id?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          owner_id?: string | null
+          position?: number
+          public_url?: string | null
+          slug: string
+          status?: Database["public"]["Enums"]["project_status"]
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          description?: string | null
+          edit_url?: string | null
+          entity_id?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          owner_id?: string | null
+          position?: number
+          public_url?: string | null
+          slug?: string
+          status?: Database["public"]["Enums"]["project_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       revenue: {
         Row: {
           amount: number
@@ -1205,6 +1330,7 @@ export type Database = {
         | "completed"
         | "archived"
       participant_status: "invited" | "confirmed" | "attended" | "missed"
+      project_status: "draft" | "live" | "paused" | "archived"
       revenue_status: "planned" | "confirmed" | "received"
       task_priority: "low" | "medium" | "high" | "urgent"
       task_status: "todo" | "in_progress" | "blocked" | "done"
@@ -1370,6 +1496,7 @@ export const Constants = {
         "archived",
       ],
       participant_status: ["invited", "confirmed", "attended", "missed"],
+      project_status: ["draft", "live", "paused", "archived"],
       revenue_status: ["planned", "confirmed", "received"],
       task_priority: ["low", "medium", "high", "urgent"],
       task_status: ["todo", "in_progress", "blocked", "done"],
