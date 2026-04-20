@@ -1291,6 +1291,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_department_performance: { Args: { _months?: number }; Returns: Json }
       get_departments_directory: {
         Args: never
         Returns: {
