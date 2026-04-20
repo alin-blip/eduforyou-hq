@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,8 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, CheckCircle2, Circle, AlertTriangle, FileText, Lightbulb, Target } from "lucide-react";
-import { useCicles, useMeetingDetail, type Meeting, type ItemKind, type ItemStatus, type Cadence, type MeetingStatus } from "@/hooks/useCicles";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Plus, Trash2, CheckCircle2, Circle, AlertTriangle, FileText, Lightbulb, Target, UserPlus, Users } from "lucide-react";
+import { useCicles, useMeetingDetail, type Meeting, type ItemKind, type ItemStatus, type Cadence, type MeetingStatus, type ParticipantStatus } from "@/hooks/useCicles";
+import { useTeamMembers } from "@/hooks/useTeams";
 
 const kindIcons: Record<ItemKind, any> = {
   agenda: FileText,
