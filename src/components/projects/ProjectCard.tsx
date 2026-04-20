@@ -1,8 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Edit, BarChart3, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { ExternalLink, Edit, BarChart3, TrendingUp, TrendingDown, Minus, Clock } from "lucide-react";
 import * as LucideIcons from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { ro } from "date-fns/locale";
 import type { Project, ProjectMetric } from "@/hooks/useProjects";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
@@ -23,6 +25,16 @@ export function ProjectCard({ project, metrics, onEdit, onMetrics }: Props) {
   const Icon = (LucideIcons as any)[project.icon ?? "FolderKanban"] ?? LucideIcons.FolderKanban;
   const status = statusConfig[project.status] ?? statusConfig.draft;
   const topMetrics = metrics.slice(0, 3);
+
+  const lastSync = metrics.length > 0
+    ? metrics.reduce((latest, m) => {
+        const t = new Date(m.recorded_at).getTime();
+        return t > latest ? t : latest;
+      }, 0)
+    : null;
+  const lastSyncLabel = lastSync
+    ? formatDistanceToNow(new Date(lastSync), { addSuffix: true, locale: ro })
+    : null;
 
   return (
     <Card className="p-5 group hover:border-primary/50 transition-all bg-gradient-to-br from-card to-card/50 backdrop-blur-sm">
@@ -70,6 +82,13 @@ export function ProjectCard({ project, metrics, onEdit, onMetrics }: Props) {
       ) : (
         <div className="rounded-lg bg-muted/20 border border-dashed border-border p-3 mb-4 text-center">
           <p className="text-xs text-muted-foreground">Nicio metrică încă</p>
+        </div>
+      )}
+
+      {lastSyncLabel && (
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-3">
+          <Clock className="h-3 w-3" />
+          <span>Ultima actualizare {lastSyncLabel}</span>
         </div>
       )}
 
