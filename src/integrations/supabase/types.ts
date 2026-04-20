@@ -169,6 +169,71 @@ export type Database = {
           },
         ]
       }
+      debits: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          creditor: string
+          currency: string
+          end_on: string | null
+          entity_id: string | null
+          id: string
+          interest_rate: number | null
+          monthly_payment: number
+          next_payment_on: string | null
+          notes: string | null
+          principal: number
+          remaining: number
+          start_on: string
+          status: Database["public"]["Enums"]["debit_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          creditor: string
+          currency?: string
+          end_on?: string | null
+          entity_id?: string | null
+          id?: string
+          interest_rate?: number | null
+          monthly_payment?: number
+          next_payment_on?: string | null
+          notes?: string | null
+          principal?: number
+          remaining?: number
+          start_on?: string
+          status?: Database["public"]["Enums"]["debit_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          creditor?: string
+          currency?: string
+          end_on?: string | null
+          entity_id?: string | null
+          id?: string
+          interest_rate?: number | null
+          monthly_payment?: number
+          next_payment_on?: string | null
+          notes?: string | null
+          principal?: number
+          remaining?: number
+          start_on?: string
+          status?: Database["public"]["Enums"]["debit_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debits_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           budget_monthly: number | null
@@ -248,6 +313,134 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category: Database["public"]["Enums"]["expense_category"]
+          created_at: string
+          created_by: string | null
+          currency: string
+          department_id: string | null
+          description: string | null
+          entity_id: string | null
+          id: string
+          is_recurring: boolean
+          occurred_on: string
+          status: Database["public"]["Enums"]["expense_status"]
+          updated_at: string
+          vendor: string | null
+        }
+        Insert: {
+          amount?: number
+          category?: Database["public"]["Enums"]["expense_category"]
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          department_id?: string | null
+          description?: string | null
+          entity_id?: string | null
+          id?: string
+          is_recurring?: boolean
+          occurred_on?: string
+          status?: Database["public"]["Enums"]["expense_status"]
+          updated_at?: string
+          vendor?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: Database["public"]["Enums"]["expense_category"]
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          department_id?: string | null
+          description?: string | null
+          entity_id?: string | null
+          id?: string
+          is_recurring?: boolean
+          occurred_on?: string
+          status?: Database["public"]["Enums"]["expense_status"]
+          updated_at?: string
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount: number
+          counterparty: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          due_on: string | null
+          entity_id: string | null
+          id: string
+          issued_on: string
+          kind: Database["public"]["Enums"]["invoice_kind"]
+          notes: string | null
+          number: string | null
+          paid_on: string | null
+          status: Database["public"]["Enums"]["invoice_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          counterparty: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          due_on?: string | null
+          entity_id?: string | null
+          id?: string
+          issued_on?: string
+          kind?: Database["public"]["Enums"]["invoice_kind"]
+          notes?: string | null
+          number?: string | null
+          paid_on?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          counterparty?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          due_on?: string | null
+          entity_id?: string | null
+          id?: string
+          issued_on?: string
+          kind?: Database["public"]["Enums"]["invoice_kind"]
+          notes?: string | null
+          number?: string | null
+          paid_on?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       key_results: {
         Row: {
@@ -475,6 +668,59 @@ export type Database = {
             columns: ["department_id"]
             isOneToOne: false
             referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      revenue: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          entity_id: string | null
+          id: string
+          notes: string | null
+          occurred_on: string
+          source: string | null
+          status: Database["public"]["Enums"]["revenue_status"]
+          stream: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          entity_id?: string | null
+          id?: string
+          notes?: string | null
+          occurred_on?: string
+          source?: string | null
+          status?: Database["public"]["Enums"]["revenue_status"]
+          stream: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          entity_id?: string | null
+          id?: string
+          notes?: string | null
+          occurred_on?: string
+          source?: string | null
+          status?: Database["public"]["Enums"]["revenue_status"]
+          stream?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
             referencedColumns: ["id"]
           },
         ]
@@ -712,6 +958,7 @@ export type Database = {
           slug: string
         }[]
       }
+      get_finance_snapshot: { Args: { _months?: number }; Returns: Json }
       get_team_directory: {
         Args: never
         Returns: {
@@ -741,7 +988,23 @@ export type Database = {
     Enums: {
       app_role: "ceo" | "executive" | "manager" | "member"
       deal_status: "open" | "won" | "lost"
+      debit_status: "active" | "paid_off" | "defaulted"
+      expense_category:
+        | "salaries"
+        | "ads_meta"
+        | "ads_google"
+        | "ads_other"
+        | "software"
+        | "rent"
+        | "utilities"
+        | "contractors"
+        | "travel"
+        | "marketing"
+        | "other"
+      expense_status: "planned" | "committed" | "paid"
       insight_type: "cfo" | "copilot" | "alert" | "recommendation"
+      invoice_kind: "outgoing" | "incoming"
+      invoice_status: "draft" | "sent" | "paid" | "overdue" | "cancelled"
       kr_status: "not_started" | "in_progress" | "completed" | "blocked"
       objective_level: "company" | "department" | "individual"
       objective_status:
@@ -750,6 +1013,7 @@ export type Database = {
         | "off_track"
         | "completed"
         | "archived"
+      revenue_status: "planned" | "confirmed" | "received"
       task_priority: "low" | "medium" | "high" | "urgent"
       task_status: "todo" | "in_progress" | "blocked" | "done"
       tree_type: "value" | "profit" | "kpi"
@@ -882,7 +1146,24 @@ export const Constants = {
     Enums: {
       app_role: ["ceo", "executive", "manager", "member"],
       deal_status: ["open", "won", "lost"],
+      debit_status: ["active", "paid_off", "defaulted"],
+      expense_category: [
+        "salaries",
+        "ads_meta",
+        "ads_google",
+        "ads_other",
+        "software",
+        "rent",
+        "utilities",
+        "contractors",
+        "travel",
+        "marketing",
+        "other",
+      ],
+      expense_status: ["planned", "committed", "paid"],
       insight_type: ["cfo", "copilot", "alert", "recommendation"],
+      invoice_kind: ["outgoing", "incoming"],
+      invoice_status: ["draft", "sent", "paid", "overdue", "cancelled"],
       kr_status: ["not_started", "in_progress", "completed", "blocked"],
       objective_level: ["company", "department", "individual"],
       objective_status: [
@@ -892,6 +1173,7 @@ export const Constants = {
         "completed",
         "archived",
       ],
+      revenue_status: ["planned", "confirmed", "received"],
       task_priority: ["low", "medium", "high", "urgent"],
       task_status: ["todo", "in_progress", "blocked", "done"],
       tree_type: ["value", "profit", "kpi"],
