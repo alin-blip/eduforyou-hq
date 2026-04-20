@@ -103,7 +103,13 @@ const WeeklyReportEmail = ({
   underperformer = fallback.underperformer,
   priorities = fallback.priorities,
   pdfUrl,
-}: WeeklyReportEmailProps) => (
+  paceHistory = [],
+}: WeeklyReportEmailProps) => {
+  const sparklineSvg = renderPaceSparkline(paceHistory)
+  const paceLatest = paceHistory.length > 0 ? paceHistory[paceHistory.length - 1].value : null
+  const paceFirst = paceHistory.length > 0 ? paceHistory[0].value : null
+  const paceDelta = paceLatest !== null && paceFirst !== null ? Math.round((paceLatest - paceFirst) * 10) / 10 : null
+  return (
   <Html lang="ro" dir="ltr">
     <Head />
     <Preview>
@@ -130,6 +136,31 @@ const WeeklyReportEmail = ({
           <Text style={sectionLabel}>Executive summary</Text>
           <Text style={summaryText}>{executiveSummary}</Text>
         </Section>
+
+        {/* PACE Score sparkline (last 6 months) */}
+        {sparklineSvg && (
+          <Section style={section}>
+            <Text style={sectionLabel}>PACE Score · ultimele {paceHistory.length} luni</Text>
+            <Section style={sparklineCard}>
+              <Section style={sparklineHeader}>
+                <Text style={sparklineValue}>{paceLatest}</Text>
+                {paceDelta !== null && (
+                  <Text style={paceDelta >= 0 ? sparklineDeltaUp : sparklineDeltaDown}>
+                    {paceDelta >= 0 ? '▲' : '▼'} {Math.abs(paceDelta)} pts
+                  </Text>
+                )}
+              </Section>
+              <div
+                style={{ lineHeight: 0, marginTop: '8px' }}
+                dangerouslySetInnerHTML={{ __html: sparklineSvg }}
+              />
+              <Section style={sparklineFooter}>
+                <Text style={sparklineFooterText}>{paceHistory[0]?.period}</Text>
+                <Text style={sparklineFooterText}>{paceHistory[paceHistory.length - 1]?.period}</Text>
+              </Section>
+            </Section>
+          </Section>
+        )}
 
         {/* PDF download CTA */}
         {pdfUrl && (
