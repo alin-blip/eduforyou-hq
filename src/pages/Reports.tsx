@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BarChart3, Plus, Trash2, Sparkles, FileDown, RefreshCw } from "lucide-react";
+import { BarChart3, Plus, Trash2, Sparkles, FileDown, RefreshCw, Mail, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import {
 } from "@/components/reports/DepartmentComparison";
 import { WeeklySummary, type WeeklyReport } from "@/components/reports/WeeklySummary";
 import { SnapshotsComparison } from "@/components/reports/SnapshotsComparison";
+import { WeeklyReportEmailPreview } from "@/components/reports/WeeklyReportEmailPreview";
 import { exportReportsPdf } from "@/lib/reportsPdf";
 
 interface Benchmark {
@@ -36,7 +37,8 @@ const PERIOD_LABELS: Record<PeriodMonths, string> = {
 };
 
 export default function ReportsPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, roles } = useAuth();
+  const canSendEmail = roles.includes("ceo") || roles.includes("executive");
   const [benchmarks, setBenchmarks] = useState<Benchmark[]>([]);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState({ metric: "", industry: "EdTech", value: 0, unit: "", source: "" });
@@ -47,7 +49,9 @@ export default function ReportsPage() {
   const [report, setReport] = useState<WeeklyReport | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [emailPreviewOpen, setEmailPreviewOpen] = useState(false);
 
   const loadBenchmarks = async () => {
     const { data } = await supabase.from("benchmarks").select("*").order("metric");
@@ -115,6 +119,27 @@ export default function ReportsPage() {
     }
   };
 
+  const sendReportEmailNow = async () => {
+    if (!confirm(`Trimit raportul săptămânal acum la CEO + Executive + Manageri (perioada: ${PERIOD_LABELS[period].toLowerCase()})?`)) return;
+    setEmailSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("weekly-report-email", {
+        body: { months: period },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const sent = (data as any)?.sent ?? 0;
+      const total = (data as any)?.total ?? 0;
+      toast.success(`Raport trimis: ${sent}/${total} destinatari`, {
+        description: total === 0 ? "Niciun destinatar (CEO/Executive/Manager)" : undefined,
+      });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Eroare la trimiterea raportului");
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
   const create = async () => {
     if (!draft.metric.trim()) return;
     const { error } = await supabase.from("benchmarks").insert(draft);
@@ -166,6 +191,27 @@ export default function ReportsPage() {
             <Sparkles className={`h-4 w-4 ${aiLoading ? "animate-pulse" : ""}`} />
             {aiLoading ? "AI generează…" : report ? "Regenerează AI" : "Generează AI summary"}
           </Button>
+          {report && (
+            <Button
+              variant="outline"
+              onClick={() => setEmailPreviewOpen(true)}
+              className="gap-2"
+            >
+              <Mail className="h-4 w-4" />
+              Preview email
+            </Button>
+          )}
+          {canSendEmail && report && (
+            <Button
+              variant="outline"
+              onClick={sendReportEmailNow}
+              disabled={emailSending}
+              className="gap-2 border-emerald-500/30 bg-emerald-500/5 text-emerald-600 hover:bg-emerald-500/10"
+            >
+              <Send className={`h-4 w-4 ${emailSending ? "animate-pulse" : ""}`} />
+              {emailSending ? "Trimit…" : "Trimite la echipă"}
+            </Button>
+          )}
           <Button
             onClick={downloadPdf}
             disabled={pdfLoading || loadingDept}
@@ -176,6 +222,28 @@ export default function ReportsPage() {
           </Button>
         </div>
       </header>
+
+      {/* Email preview dialog */}
+      <Dialog open={emailPreviewOpen} onOpenChange={setEmailPreviewOpen}>
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-hidden p-0">
+          <DialogHeader className="border-b border-border/50 px-6 py-4">
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-primary" />
+              Preview email — așa va arăta raportul săptămânal trimis luni dimineață
+            </DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[calc(90vh-80px)] overflow-y-auto">
+            {report && (
+              <WeeklyReportEmailPreview
+                report={report}
+                months={period}
+                generatedAt={generatedAt}
+                pdfUrl="https://example.com/sample-report.pdf"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Tabs defaultValue="overview">
         <TabsList className="bg-card/60">
