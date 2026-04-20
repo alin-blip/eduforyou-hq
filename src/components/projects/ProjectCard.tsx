@@ -26,6 +26,16 @@ export function ProjectCard({ project, metrics, onEdit, onMetrics }: Props) {
   const status = statusConfig[project.status] ?? statusConfig.draft;
   const topMetrics = metrics.slice(0, 3);
 
+  const lastSync = metrics.length > 0
+    ? metrics.reduce((latest, m) => {
+        const t = new Date(m.recorded_at).getTime();
+        return t > latest ? t : latest;
+      }, 0)
+    : null;
+  const lastSyncLabel = lastSync
+    ? formatDistanceToNow(new Date(lastSync), { addSuffix: true, locale: ro })
+    : null;
+
   return (
     <Card className="p-5 group hover:border-primary/50 transition-all bg-gradient-to-br from-card to-card/50 backdrop-blur-sm">
       <div className="flex items-start justify-between mb-4">
