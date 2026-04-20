@@ -194,12 +194,42 @@ export default function SettingsPage() {
                   <AvatarFallback className="text-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 space-y-2">
-                  <Label>URL avatar</Label>
-                  <Input
-                    value={profile.avatar_url ?? ""}
-                    onChange={(e) => setProfile({ ...profile, avatar_url: e.target.value })}
-                    placeholder="https://..."
-                  />
+                  <Label>Avatar</Label>
+                  <div className="flex flex-wrap gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingAvatar}
+                    >
+                      {uploadingAvatar ? (
+                        <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Se încarcă...</>
+                      ) : (
+                        <><Upload className="h-4 w-4 mr-2" />Încarcă avatar</>
+                      )}
+                    </Button>
+                    {profile.avatar_url && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive"
+                        onClick={handleAvatarDelete}
+                        disabled={uploadingAvatar}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />Șterge
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">JPG, PNG, WebP sau GIF. Max 5MB.</p>
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
