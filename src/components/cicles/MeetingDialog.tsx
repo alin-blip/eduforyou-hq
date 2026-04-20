@@ -38,7 +38,28 @@ interface Props {
 
 export function MeetingDialog({ open, onOpenChange, meeting }: Props) {
   const { createMeeting, updateMeeting } = useCicles();
-  const { items, addItem, updateItem, deleteItem } = useMeetingDetail(meeting?.id ?? null);
+  const { items, participants, addItem, updateItem, deleteItem, addParticipant, removeParticipant, updateParticipantStatus } = useMeetingDetail(meeting?.id ?? null);
+  const { data: teamMembers = [] } = useTeamMembers();
+
+  const participantUserIds = useMemo(() => new Set(participants.map((p) => p.user_id)), [participants]);
+  const availableMembers = useMemo(() => teamMembers.filter((m) => !participantUserIds.has(m.id)), [teamMembers, participantUserIds]);
+  const memberById = useMemo(() => new Map(teamMembers.map((m) => [m.id, m])), [teamMembers]);
+
+  const [newParticipantId, setNewParticipantId] = useState<string>("");
+
+  const statusVariant: Record<ParticipantStatus, string> = {
+    invited: "bg-muted text-muted-foreground",
+    confirmed: "bg-primary/15 text-primary",
+    attended: "bg-emerald-500/15 text-emerald-400",
+    missed: "bg-destructive/15 text-destructive",
+  };
+
+  const statusLabel: Record<ParticipantStatus, string> = {
+    invited: "Invitat",
+    confirmed: "Confirmat",
+    attended: "Prezent",
+    missed: "Absent",
+  };
 
   const [title, setTitle] = useState("");
   const [cadence, setCadence] = useState<Cadence>("weekly");
