@@ -69,6 +69,31 @@ export default function TeamsPage() {
   const [deptDialogOpen, setDeptDialogOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [resending, setResending] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState<string | null>(null);
+  const [pendingOnly, setPendingOnly] = useState(false);
+
+  const isPending = (userId: string) => {
+    const s = authStatus?.get(userId);
+    if (!s) return true;
+    return !s.last_sign_in_at && !s.email_confirmed_at;
+  };
+
+  const handleResendOne = async (email: string) => {
+    setResendingEmail(email);
+    try {
+      const { data, error } = await supabase.functions.invoke("resend-invites", {
+        body: { emails: [email] },
+      });
+      if (error) throw error;
+      const r = (data?.results ?? [])[0];
+      if (r?.ok) toast.success(`Trimis către ${email}`);
+      else toast.error(r?.error || "Eșuat");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare");
+    } finally {
+      setResendingEmail(null);
+    }
+  };
 
   const handleResendAll = async () => {
     const pending = members
