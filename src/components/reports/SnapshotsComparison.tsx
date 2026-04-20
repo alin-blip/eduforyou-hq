@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Camera, RefreshCw, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Camera, RefreshCw, TrendingUp, TrendingDown, Minus, History } from "lucide-react";
 import { toast } from "sonner";
 import {
   LineChart,
