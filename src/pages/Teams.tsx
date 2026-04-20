@@ -71,6 +71,7 @@ export default function TeamsPage() {
   const { data: departments = [] } = useDepartmentsList();
   const { data: authStatus } = useTeamAuthStatus();
   const deleteDept = useDeleteDepartment();
+  const setRoles = useSetUserRoles();
 
   const [memberDialog, setMemberDialog] = useState<ProfileWithRoles | null>(null);
   const [deptDialog, setDeptDialog] = useState<Department | null>(null);
