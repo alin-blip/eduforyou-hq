@@ -1582,6 +1582,15 @@ export type Database = {
       }
       get_finance_snapshot: { Args: { _months?: number }; Returns: Json }
       get_snapshots_comparison: { Args: { _limit?: number }; Returns: Json }
+      get_team_auth_status: {
+        Args: never
+        Returns: {
+          email_confirmed_at: string
+          invited_at: string
+          last_sign_in_at: string
+          user_id: string
+        }[]
+      }
       get_team_directory: {
         Args: never
         Returns: {
