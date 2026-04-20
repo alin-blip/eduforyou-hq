@@ -201,6 +201,17 @@ export default function ReportsPage() {
               Preview email
             </Button>
           )}
+          {canSendEmail && report && (
+            <Button
+              variant="outline"
+              onClick={sendReportEmailNow}
+              disabled={emailSending}
+              className="gap-2 border-emerald-500/30 bg-emerald-500/5 text-emerald-600 hover:bg-emerald-500/10"
+            >
+              <Send className={`h-4 w-4 ${emailSending ? "animate-pulse" : ""}`} />
+              {emailSending ? "Trimit…" : "Trimite la echipă"}
+            </Button>
+          )}
           <Button
             onClick={downloadPdf}
             disabled={pdfLoading || loadingDept}
