@@ -217,6 +217,8 @@ export default function TeamsPage() {
           )}
         </div>
       )}
+        </TabsContent>
+      </Tabs>
 
       <MemberDialog
         open={!!memberDialog}
