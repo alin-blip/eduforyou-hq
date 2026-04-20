@@ -35,31 +35,58 @@ Deno.serve(async (req) => {
     const mode = (body?.mode ?? "weekly") as "weekly" | "scenario" | "ebitda";
     const scenario = body?.scenario as string | undefined;
 
-    // Mock financial snapshot (will be replaced with real CFO tables in next iteration)
+    // Pull REAL finance snapshot via SECURITY DEFINER function (RLS-safe; verifies role inside)
+    const { data: snapData, error: snapErr } = await userClient.rpc("get_finance_snapshot", { _months: 1 });
+    if (snapErr) {
+      console.error("snapshot error", snapErr);
+      return new Response(JSON.stringify({ error: "Could not load finance snapshot" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (snapData?.error === "forbidden") {
+      return new Response(JSON.stringify({ error: "Doar managerii și executivii pot rula AI CFO." }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Fallback to neutral defaults if no data yet
     const financialContext = {
-      mrr_eur: 48000,
-      monthly_burn_eur: 38000,
-      runway_months: 14,
-      revenue_streams: { b2c: 22000, agent_hub: 14000, partners_saas: 12000 },
-      top_costs: { salaries: 24000, ads_meta: 6500, ads_google: 3500, software: 1800, other: 2200 },
-      cac_eur: 95,
-      ltv_eur: 720,
-      gross_margin_pct: 68,
+      mrr_eur: snapData?.revenue_total ?? 0,
+      monthly_burn_eur: (snapData?.expenses_total ?? 0) || (snapData?.monthly_burn_recurring ?? 0),
+      monthly_burn_recurring_eur: snapData?.monthly_burn_recurring ?? 0,
+      net_profit_eur: snapData?.net_profit ?? 0,
+      gross_margin_pct: snapData?.gross_margin_pct ?? 0,
+      runway_months: snapData?.runway_months ?? null,
+      cash_collected_eur: snapData?.cash_collected ?? 0,
+      invoices_outstanding_in_eur: snapData?.invoices_outstanding_in ?? 0,
+      invoices_outstanding_out_eur: snapData?.invoices_outstanding_out ?? 0,
+      debt_remaining_eur: snapData?.debt_remaining ?? 0,
+      debt_monthly_payment_eur: snapData?.debt_monthly_payment ?? 0,
+      revenue_streams: snapData?.revenue_streams ?? {},
+      expense_categories: snapData?.expense_categories ?? {},
     };
+
+    const hasData =
+      financialContext.mrr_eur > 0 ||
+      financialContext.monthly_burn_eur > 0 ||
+      Object.keys(financialContext.revenue_streams).length > 0;
 
     let userPrompt = "";
     if (mode === "weekly") {
-      userPrompt = `Analizează acest snapshot financiar EduForYou și generează exact 3 recomandări săptămânale prioritare. Pentru fiecare: titlu scurt (≤10 cuvinte), motivare 1 frază pe baza datelor, acțiune concretă, impact estimat în EUR/lună. Răspunde JSON.
+      userPrompt = `Analizează acest snapshot financiar real EduForYou (luna curentă) și generează exact 3 recomandări săptămânale prioritare. Pentru fiecare: titlu scurt (≤10 cuvinte), motivare 1 frază pe baza datelor reale, acțiune concretă, impact estimat în EUR/lună, severity (low/medium/high). ${hasData ? "" : "ATENȚIE: nu există încă date financiare; recomandările trebuie să se concentreze pe a începe să înregistreze venituri, cheltuieli și facturi pentru a putea genera analiză."} Răspunde JSON.
 
-DATE: ${JSON.stringify(financialContext)}`;
+DATE REALE: ${JSON.stringify(financialContext)}`;
     } else if (mode === "scenario") {
-      userPrompt = `Calculează impactul acestui scenariu pe runway, profit lunar și marjă. Snapshot actual: ${JSON.stringify(financialContext)}.
+      userPrompt = `Calculează impactul acestui scenariu pe runway, profit lunar și marjă, pornind de la datele reale. Snapshot actual: ${JSON.stringify(financialContext)}.
 
 SCENARIU: "${scenario}"
 
 Returnează JSON cu: assumptions (array string), new_burn_eur, new_revenue_eur, new_runway_months, new_margin_pct, summary (1 paragraf), risks (array string), opportunities (array string).`;
     } else {
-      userPrompt = `Pentru fiecare KPI principal (CAC, LTV, conversion rate visitor→lead, retention), estimează impactul EBITDA al unei îmbunătățiri de 10%. Snapshot: ${JSON.stringify(financialContext)}. Returnează JSON cu array kpis: [{kpi, current, improved_10pct, ebitda_impact_eur_monthly, leverage_score (1-10)}].`;
+      userPrompt = `Pentru fiecare KPI principal (CAC, LTV, conversion rate visitor→lead, retention, marjă brută), estimează impactul EBITDA al unei îmbunătățiri de 10%, raportat la snapshot-ul real: ${JSON.stringify(financialContext)}. Returnează JSON cu array kpis: [{kpi, current, improved_10pct, ebitda_impact_eur_monthly, leverage_score (1-10)}].`;
     }
 
     const tools = [
@@ -128,7 +155,7 @@ Returnează JSON cu: assumptions (array string), new_burn_eur, new_revenue_eur, 
       body: JSON.stringify({
         model: "google/gemini-2.5-pro",
         messages: [
-          { role: "system", content: "Ești AI CFO Strategic. Analizezi date financiare și dai recomandări precise, în RO. Folosește tool calling pentru output structurat." },
+          { role: "system", content: "Ești AI CFO Strategic. Analizezi DATE FINANCIARE REALE și dai recomandări precise și acționabile, în limba română. Folosește tool calling pentru output structurat." },
           { role: "user", content: userPrompt },
         ],
         tools,
