@@ -18,17 +18,23 @@ export function useTeamMembers() {
   return useQuery({
     queryKey: ["team-members"],
     queryFn: async () => {
-      const { data: profiles, error: pErr } = await supabase
+      // Try full SELECT (works for admins/managers). Fallback to safe directory RPC for members.
+      const { data: fullProfiles, error: pErr } = await supabase
         .from("profiles")
         .select("*, department:departments(id,name,color)")
         .order("full_name");
-      if (pErr) throw pErr;
 
-      const { data: roles, error: rErr } = await supabase
-        .from("user_roles")
-        .select("user_id, role");
-      if (rErr) throw rErr;
+      let profiles: any[] = [];
+      if (!pErr && fullProfiles) {
+        profiles = fullProfiles;
+      } else {
+        // Members: use security-definer directory (no email/phone/cost)
+        const { data: dir, error: dErr } = await supabase.rpc("get_team_directory");
+        if (dErr) throw dErr;
+        profiles = (dir ?? []).map((p: any) => ({ ...p, department: null }));
+      }
 
+      const { data: roles } = await supabase.from("user_roles").select("user_id, role");
       const rolesByUser = new Map<string, AppRole[]>();
       (roles ?? []).forEach((r) => {
         const arr = rolesByUser.get(r.user_id) ?? [];
@@ -36,7 +42,7 @@ export function useTeamMembers() {
         rolesByUser.set(r.user_id, arr);
       });
 
-      return ((profiles ?? []) as unknown as (Profile & { department: Department | null })[]).map((p) => ({
+      return profiles.map((p) => ({
         ...p,
         roles: rolesByUser.get(p.id) ?? [],
       })) as ProfileWithRoles[];
@@ -48,12 +54,16 @@ export function useDepartmentsList() {
   return useQuery({
     queryKey: ["departments-list"],
     queryFn: async () => {
+      // Managers+: full select with manager join. Members: safe directory.
       const { data, error } = await supabase
         .from("departments")
         .select("*, manager:profiles!departments_manager_id_fkey(id,full_name,avatar_url)")
         .order("name");
-      if (error) throw error;
-      return data ?? [];
+      if (!error && data) return data;
+
+      const { data: dir, error: dErr } = await supabase.rpc("get_departments_directory");
+      if (dErr) throw dErr;
+      return (dir ?? []).map((d: any) => ({ ...d, manager: null, budget_monthly: null })) as any;
     },
   });
 }
