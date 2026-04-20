@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BarChart3, Plus, Trash2, Sparkles, FileDown, RefreshCw, Mail } from "lucide-react";
+import { BarChart3, Plus, Trash2, Sparkles, FileDown, RefreshCw, Mail, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
