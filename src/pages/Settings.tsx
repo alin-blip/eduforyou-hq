@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Settings as SettingsIcon, User, Building2, Lock, Globe } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Settings as SettingsIcon, User, Building2, Lock, Globe, Upload, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,6 +35,8 @@ export default function SettingsPage() {
   const [locale, setLocale] = useState(() => localStorage.getItem("efy_locale") ?? "ro");
   const [tz, setTz] = useState(() => localStorage.getItem("efy_tz") ?? Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [entityForm, setEntityForm] = useState({ name: "", slug: "", description: "" });
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -52,6 +54,76 @@ export default function SettingsPage() {
       toast.success("Profil salvat");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Eroare la salvare");
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // reset to allow re-uploading same file
+    if (!file || !user) return;
+
+    if (!file.type.startsWith("image/")) return toast.error("Doar imagini sunt permise");
+    if (file.size > 5 * 1024 * 1024) return toast.error("Imagine prea mare (max 5MB)");
+
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type,
+      });
+      if (upErr) throw upErr;
+
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const newUrl = urlData.publicUrl;
+
+      // Try to clean up the old avatar (best-effort)
+      const oldUrl = profile.avatar_url;
+      if (oldUrl && oldUrl.includes("/avatars/")) {
+        const marker = `/avatars/`;
+        const idx = oldUrl.indexOf(marker);
+        if (idx >= 0) {
+          const oldPath = oldUrl.substring(idx + marker.length).split("?")[0];
+          if (oldPath.startsWith(`${user.id}/`)) {
+            await supabase.storage.from("avatars").remove([oldPath]);
+          }
+        }
+      }
+
+      const next = { ...profile, avatar_url: newUrl };
+      setProfile(next);
+      await updateProfile.mutateAsync({ id: user.id, patch: { avatar_url: newUrl } });
+      toast.success("Avatar actualizat");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Eroare la upload");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleAvatarDelete = async () => {
+    if (!user || !profile.avatar_url) return;
+    if (!confirm("Ștergi avatarul curent?")) return;
+
+    try {
+      const oldUrl = profile.avatar_url;
+      const marker = `/avatars/`;
+      const idx = oldUrl.indexOf(marker);
+      if (idx >= 0) {
+        const oldPath = oldUrl.substring(idx + marker.length).split("?")[0];
+        if (oldPath.startsWith(`${user.id}/`)) {
+          await supabase.storage.from("avatars").remove([oldPath]);
+        }
+      }
+      const next = { ...profile, avatar_url: "" };
+      setProfile(next);
+      await updateProfile.mutateAsync({ id: user.id, patch: { avatar_url: null } });
+      toast.success("Avatar șters");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Eroare la ștergere");
     }
   };
 
@@ -122,12 +194,42 @@ export default function SettingsPage() {
                   <AvatarFallback className="text-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 space-y-2">
-                  <Label>URL avatar</Label>
-                  <Input
-                    value={profile.avatar_url ?? ""}
-                    onChange={(e) => setProfile({ ...profile, avatar_url: e.target.value })}
-                    placeholder="https://..."
-                  />
+                  <Label>Avatar</Label>
+                  <div className="flex flex-wrap gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingAvatar}
+                    >
+                      {uploadingAvatar ? (
+                        <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Se încarcă...</>
+                      ) : (
+                        <><Upload className="h-4 w-4 mr-2" />Încarcă avatar</>
+                      )}
+                    </Button>
+                    {profile.avatar_url && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive"
+                        onClick={handleAvatarDelete}
+                        disabled={uploadingAvatar}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />Șterge
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">JPG, PNG, WebP sau GIF. Max 5MB.</p>
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
