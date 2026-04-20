@@ -1,8 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Edit, BarChart3, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { ExternalLink, Edit, BarChart3, TrendingUp, TrendingDown, Minus, Clock } from "lucide-react";
 import * as LucideIcons from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { ro } from "date-fns/locale";
 import type { Project, ProjectMetric } from "@/hooks/useProjects";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
