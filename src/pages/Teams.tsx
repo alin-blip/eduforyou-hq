@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Users, UserPlus, Building2, Crown, Shield, User as UserIcon, Pencil, Trash2, Mail } from "lucide-react";
+import { Plus, Users, UserPlus, Building2, Crown, Shield, User as UserIcon, Pencil, Trash2, Mail, Send, Filter } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,31 @@ export default function TeamsPage() {
   const [deptDialogOpen, setDeptDialogOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [resending, setResending] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState<string | null>(null);
+  const [pendingOnly, setPendingOnly] = useState(false);
+
+  const isPending = (userId: string) => {
+    const s = authStatus?.get(userId);
+    if (!s) return true;
+    return !s.last_sign_in_at && !s.email_confirmed_at;
+  };
+
+  const handleResendOne = async (email: string) => {
+    setResendingEmail(email);
+    try {
+      const { data, error } = await supabase.functions.invoke("resend-invites", {
+        body: { emails: [email] },
+      });
+      if (error) throw error;
+      const r = (data?.results ?? [])[0];
+      if (r?.ok) toast.success(`Trimis către ${email}`);
+      else toast.error(r?.error || "Eșuat");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare");
+    } finally {
+      setResendingEmail(null);
+    }
+  };
 
   const handleResendAll = async () => {
     const pending = members
@@ -100,14 +125,20 @@ export default function TeamsPage() {
 
   const grouped = useMemo(() => {
     const map = new Map<string, ProfileWithRoles[]>();
-    members.forEach((m) => {
+    const filtered = pendingOnly ? members.filter((m) => isPending(m.id)) : members;
+    filtered.forEach((m) => {
       const key = m.department_id ?? "__unassigned__";
       const arr = map.get(key) ?? [];
       arr.push(m);
       map.set(key, arr);
     });
     return map;
-  }, [members]);
+  }, [members, pendingOnly, authStatus]);
+
+  const pendingCount = useMemo(
+    () => members.filter((m) => isPending(m.id)).length,
+    [members, authStatus]
+  );
 
   const totalCost = members.reduce((sum, m) => sum + (Number(m.monthly_cost) || 0), 0);
   const totalCapacity = members.reduce((sum, m) => sum + (m.weekly_capacity_hours ?? 0), 0);
@@ -176,7 +207,28 @@ export default function TeamsPage() {
           <WorkloadView members={members} />
         </TabsContent>
 
-        <TabsContent value="org">
+        <TabsContent value="org" className="space-y-4">
+          {isAdmin && (
+            <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2">
+              <div className="flex items-center gap-2 text-sm flex-wrap">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Filtru:</span>
+                <Button
+                  size="sm"
+                  variant={pendingOnly ? "default" : "outline"}
+                  onClick={() => setPendingOnly((v) => !v)}
+                >
+                  Doar în așteptare
+                  <Badge variant="secondary" className="ml-2">{pendingCount}</Badge>
+                </Button>
+                {pendingOnly && (
+                  <Button size="sm" variant="ghost" onClick={() => setPendingOnly(false)}>
+                    Resetează
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
       {isLoading ? (
         <p className="text-muted-foreground">Se încarcă echipele...</p>
       ) : (
@@ -227,7 +279,7 @@ export default function TeamsPage() {
                     <p className="text-sm text-muted-foreground italic">Niciun membru în acest departament.</p>
                   ) : (
                     <div className="space-y-2">
-                      {deptMembers.map((m) => <MemberRow key={m.id} member={m} status={authStatus?.get(m.id)} onClick={() => setMemberDialog(m)} />)}
+                      {deptMembers.map((m) => <MemberRow key={m.id} member={m} status={authStatus?.get(m.id)} onClick={() => setMemberDialog(m)} onResend={handleResendOne} resending={resendingEmail === m.email} />)}
                     </div>
                   )}
                 </CardContent>
@@ -246,7 +298,7 @@ export default function TeamsPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 {grouped.get("__unassigned__")!.map((m) => (
-                  <MemberRow key={m.id} member={m} status={authStatus?.get(m.id)} onClick={() => setMemberDialog(m)} />
+                  <MemberRow key={m.id} member={m} status={authStatus?.get(m.id)} onClick={() => setMemberDialog(m)} onResend={handleResendOne} resending={resendingEmail === m.email} />
                 ))}
               </CardContent>
             </Card>
@@ -271,7 +323,19 @@ export default function TeamsPage() {
   );
 }
 
-function MemberRow({ member, status, onClick }: { member: ProfileWithRoles; status?: AuthStatusRow; onClick: () => void }) {
+function MemberRow({
+  member,
+  status,
+  onClick,
+  onResend,
+  resending,
+}: {
+  member: ProfileWithRoles;
+  status?: AuthStatusRow;
+  onClick: () => void;
+  onResend?: (email: string) => void | Promise<void>;
+  resending?: boolean;
+}) {
   const role = topRole(member.roles);
   const meta = ROLE_META[role];
   const Icon = meta.icon;
@@ -280,15 +344,18 @@ function MemberRow({ member, status, onClick }: { member: ProfileWithRoles; stat
   let statusLabel = "Necunoscut";
   let statusVariant: "default" | "secondary" | "outline" | "destructive" = "outline";
   let statusTitle = "Status auth indisponibil";
+  let isPending = true;
   if (status) {
     if (status.last_sign_in_at) {
       statusLabel = "Activ";
       statusVariant = "default";
       statusTitle = `Ultima logare: ${new Date(status.last_sign_in_at).toLocaleString("ro-RO")}`;
+      isPending = false;
     } else if (status.email_confirmed_at) {
       statusLabel = "Confirmat";
       statusVariant = "secondary";
       statusTitle = `Email confirmat: ${new Date(status.email_confirmed_at).toLocaleString("ro-RO")} — încă nu s-a logat`;
+      isPending = false;
     } else {
       statusLabel = "În așteptare";
       statusVariant = "outline";
@@ -299,9 +366,12 @@ function MemberRow({ member, status, onClick }: { member: ProfileWithRoles; stat
   }
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="flex w-full items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2 text-left hover:bg-muted/50 transition-colors"
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
+      className="flex w-full items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2 text-left hover:bg-muted/50 transition-colors cursor-pointer"
     >
       <div className="flex items-center gap-3 min-w-0">
         <Avatar className="h-9 w-9">
@@ -323,7 +393,19 @@ function MemberRow({ member, status, onClick }: { member: ProfileWithRoles; stat
         <Badge variant={meta.variant} className="gap-1">
           <Icon className="h-3 w-3" /> {meta.label}
         </Badge>
+        {isPending && onResend && member.email && (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={resending}
+            onClick={(e) => { e.stopPropagation(); onResend(member.email as string); }}
+            title="Retrimite invitația"
+          >
+            <Send className="h-3.5 w-3.5 sm:mr-1.5" />
+            <span className="hidden sm:inline">{resending ? "..." : "Retrimite"}</span>
+          </Button>
+        )}
       </div>
-    </button>
+    </div>
   );
 }
