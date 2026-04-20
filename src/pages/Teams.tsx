@@ -28,6 +28,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { MemberDialog } from "@/components/teams/MemberDialog";
 import { DepartmentDialog } from "@/components/teams/DepartmentDialog";
 import { InviteMemberDialog } from "@/components/teams/InviteMemberDialog";
+import { WorkloadView } from "@/components/teams/WorkloadView";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ROLE_META: Record<AppRole, { label: string; icon: typeof Crown; variant: "default" | "secondary" | "outline" }> = {
   ceo: { label: "CEO", icon: Crown, variant: "default" },
@@ -127,7 +129,18 @@ export default function TeamsPage() {
         </Card>
       </div>
 
-      {/* Departments grid */}
+      {/* Tabs: Organigramă · Workload */}
+      <Tabs defaultValue="org" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="org">Organigramă</TabsTrigger>
+          <TabsTrigger value="workload">Workload</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="workload">
+          <WorkloadView members={members} />
+        </TabsContent>
+
+        <TabsContent value="org">
       {isLoading ? (
         <p className="text-muted-foreground">Se încarcă echipele...</p>
       ) : (
@@ -204,6 +217,8 @@ export default function TeamsPage() {
           )}
         </div>
       )}
+        </TabsContent>
+      </Tabs>
 
       <MemberDialog
         open={!!memberDialog}
