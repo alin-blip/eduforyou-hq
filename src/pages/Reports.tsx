@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BarChart3, Plus, Trash2, TrendingUp, Sparkles, FileDown, RefreshCw } from "lucide-react";
+import { BarChart3, Plus, Trash2, Sparkles, FileDown, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
@@ -7,12 +7,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   DepartmentComparison,
   type DepartmentPerformance,
 } from "@/components/reports/DepartmentComparison";
 import { WeeklySummary, type WeeklyReport } from "@/components/reports/WeeklySummary";
+import { SnapshotsComparison } from "@/components/reports/SnapshotsComparison";
 import { exportReportsPdf } from "@/lib/reportsPdf";
 
 interface Benchmark {
@@ -24,12 +26,22 @@ interface Benchmark {
   source: string | null;
 }
 
+type PeriodMonths = 1 | 3 | 6 | 12;
+
+const PERIOD_LABELS: Record<PeriodMonths, string> = {
+  1: "Ultima lună",
+  3: "Ultimele 3 luni",
+  6: "Ultimele 6 luni",
+  12: "Ultimele 12 luni",
+};
+
 export default function ReportsPage() {
   const { isAdmin } = useAuth();
   const [benchmarks, setBenchmarks] = useState<Benchmark[]>([]);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState({ metric: "", industry: "EdTech", value: 0, unit: "", source: "" });
 
+  const [period, setPeriod] = useState<PeriodMonths>(1);
   const [departments, setDepartments] = useState<DepartmentPerformance[]>([]);
   const [loadingDept, setLoadingDept] = useState(true);
   const [report, setReport] = useState<WeeklyReport | null>(null);
@@ -42,9 +54,9 @@ export default function ReportsPage() {
     if (data) setBenchmarks(data as Benchmark[]);
   };
 
-  const loadDepartments = async () => {
+  const loadDepartments = async (months: PeriodMonths = period) => {
     setLoadingDept(true);
-    const { data, error } = await supabase.rpc("get_department_performance", { _months: 1 });
+    const { data, error } = await supabase.rpc("get_department_performance", { _months: months });
     if (error) {
       toast.error(error.message);
     } else if ((data as any)?.error === "forbidden") {
@@ -57,18 +69,26 @@ export default function ReportsPage() {
 
   useEffect(() => {
     loadBenchmarks();
-    loadDepartments();
   }, []);
+
+  useEffect(() => {
+    loadDepartments(period);
+    // Clear AI report on period change so users regenerate for the new window
+    setReport(null);
+    setGeneratedAt(null);
+  }, [period]);
 
   const generateAiReport = async () => {
     setAiLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("reports-weekly-summary", { body: {} });
+      const { data, error } = await supabase.functions.invoke("reports-weekly-summary", {
+        body: { months: period },
+      });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       setReport((data as any).report as WeeklyReport);
       setGeneratedAt((data as any).generated_at as string);
-      toast.success("Weekly summary generat");
+      toast.success(`Summary generat pe ${PERIOD_LABELS[period].toLowerCase()}`);
     } catch (e: any) {
       const msg = String(e?.message ?? e);
       if (msg.includes("Rate limit")) toast.error("Rate limit AI. Încearcă peste un minut.");
@@ -120,12 +140,22 @@ export default function ReportsPage() {
           </div>
           <h1 className="font-display text-3xl font-semibold">Executive 360° Dashboard</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Performanță departamente live, AI weekly summary și export PDF Board Report.
+            Performanță departamente, AI summary și snapshot-uri lunare automate.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={loadDepartments} disabled={loadingDept} className="gap-2">
-            <RefreshCw className={`h-4 w-4 ${loadingDept ? "animate-spin" : ""}`} /> Refresh date
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={String(period)} onValueChange={(v) => setPeriod(Number(v) as PeriodMonths)}>
+            <SelectTrigger className="h-9 w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {([1, 3, 6, 12] as PeriodMonths[]).map((m) => (
+                <SelectItem key={m} value={String(m)}>{PERIOD_LABELS[m]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" onClick={() => loadDepartments()} disabled={loadingDept} className="gap-2">
+            <RefreshCw className={`h-4 w-4 ${loadingDept ? "animate-spin" : ""}`} /> Refresh
           </Button>
           <Button
             variant="outline"
@@ -150,12 +180,15 @@ export default function ReportsPage() {
       <Tabs defaultValue="overview">
         <TabsList className="bg-card/60">
           <TabsTrigger value="overview">360° Overview</TabsTrigger>
-          <TabsTrigger value="ai">AI Weekly Summary</TabsTrigger>
-          <TabsTrigger value="benchmarks">Benchmarks</TabsTrigger>
+          <TabsTrigger value="ai">AI Summary</TabsTrigger>
           <TabsTrigger value="snapshots">Snapshots</TabsTrigger>
+          <TabsTrigger value="benchmarks">Benchmarks</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
+          <div className="mb-3 text-xs text-muted-foreground">
+            Date agregate pe <span className="font-medium text-foreground">{PERIOD_LABELS[period].toLowerCase()}</span>
+          </div>
           {loadingDept ? (
             <Card className="p-12 text-center text-sm text-muted-foreground">Se încarcă datele…</Card>
           ) : (
@@ -164,7 +197,14 @@ export default function ReportsPage() {
         </TabsContent>
 
         <TabsContent value="ai" className="mt-6">
+          <div className="mb-3 text-xs text-muted-foreground">
+            AI analizează <span className="font-medium text-foreground">{PERIOD_LABELS[period].toLowerCase()}</span>
+          </div>
           <WeeklySummary report={report} loading={aiLoading} generatedAt={generatedAt} />
+        </TabsContent>
+
+        <TabsContent value="snapshots" className="mt-6">
+          <SnapshotsComparison />
         </TabsContent>
 
         <TabsContent value="benchmarks" className="mt-6 space-y-4">
@@ -220,17 +260,6 @@ export default function ReportsPage() {
                 ))}
               </tbody>
             </table>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="snapshots" className="mt-6">
-          <Card className="glass-card flex flex-col items-center justify-center gap-3 p-12 text-center">
-            <TrendingUp className="h-10 w-10 text-primary opacity-60" />
-            <h3 className="font-display text-lg font-semibold">Snapshots lunare — Val 3</h3>
-            <p className="max-w-md text-sm text-muted-foreground">
-              Vor stoca automat la finalul fiecărei luni: PACE score, financials, OKR completion, marketing
-              performance. Comparație lună-pe-lună cu export PDF Board Report.
-            </p>
           </Card>
         </TabsContent>
       </Tabs>

@@ -689,6 +689,81 @@ export type Database = {
           },
         ]
       }
+      monthly_snapshots: {
+        Row: {
+          cash_collected: number
+          completion_rate: number
+          created_at: string
+          departments: Json
+          expenses_total: number
+          gross_margin_pct: number
+          id: string
+          monthly_burn: number
+          net_profit: number
+          objectives_at_risk: number
+          objectives_avg_progress: number
+          objectives_off_track: number
+          objectives_on_track: number
+          objectives_total: number
+          pace_score: number
+          period: string
+          period_end: string
+          period_start: string
+          revenue_total: number
+          runway_months: number | null
+          tasks_created: number
+          tasks_done: number
+        }
+        Insert: {
+          cash_collected?: number
+          completion_rate?: number
+          created_at?: string
+          departments?: Json
+          expenses_total?: number
+          gross_margin_pct?: number
+          id?: string
+          monthly_burn?: number
+          net_profit?: number
+          objectives_at_risk?: number
+          objectives_avg_progress?: number
+          objectives_off_track?: number
+          objectives_on_track?: number
+          objectives_total?: number
+          pace_score?: number
+          period: string
+          period_end: string
+          period_start: string
+          revenue_total?: number
+          runway_months?: number | null
+          tasks_created?: number
+          tasks_done?: number
+        }
+        Update: {
+          cash_collected?: number
+          completion_rate?: number
+          created_at?: string
+          departments?: Json
+          expenses_total?: number
+          gross_margin_pct?: number
+          id?: string
+          monthly_burn?: number
+          net_profit?: number
+          objectives_at_risk?: number
+          objectives_avg_progress?: number
+          objectives_off_track?: number
+          objectives_on_track?: number
+          objectives_total?: number
+          pace_score?: number
+          period?: string
+          period_end?: string
+          period_start?: string
+          revenue_total?: number
+          runway_months?: number | null
+          tasks_created?: number
+          tasks_done?: number
+        }
+        Relationships: []
+      }
       objectives: {
         Row: {
           created_at: string
@@ -1291,6 +1366,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      capture_monthly_snapshot: {
+        Args: { _target_month?: string }
+        Returns: Json
+      }
       get_department_performance: { Args: { _months?: number }; Returns: Json }
       get_departments_directory: {
         Args: never
@@ -1305,6 +1384,7 @@ export type Database = {
         }[]
       }
       get_finance_snapshot: { Args: { _months?: number }; Returns: Json }
+      get_snapshots_comparison: { Args: { _limit?: number }; Returns: Json }
       get_team_directory: {
         Args: never
         Returns: {
