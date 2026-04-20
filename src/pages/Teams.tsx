@@ -279,7 +279,7 @@ export default function TeamsPage() {
                     <p className="text-sm text-muted-foreground italic">Niciun membru în acest departament.</p>
                   ) : (
                     <div className="space-y-2">
-                      {deptMembers.map((m) => <MemberRow key={m.id} member={m} status={authStatus?.get(m.id)} onClick={() => setMemberDialog(m)} />)}
+                      {deptMembers.map((m) => <MemberRow key={m.id} member={m} status={authStatus?.get(m.id)} onClick={() => setMemberDialog(m)} onResend={handleResendOne} resending={resendingEmail === m.email} />)}
                     </div>
                   )}
                 </CardContent>
