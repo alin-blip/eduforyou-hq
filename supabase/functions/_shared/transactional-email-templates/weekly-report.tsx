@@ -243,7 +243,8 @@ const WeeklyReportEmail = ({
       </Container>
     </Body>
   </Html>
-)
+  )
+}
 
 export const template = {
   component: WeeklyReportEmail,
