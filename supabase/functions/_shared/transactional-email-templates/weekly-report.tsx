@@ -21,6 +21,11 @@ interface Priority {
   impact: 'low' | 'medium' | 'high'
 }
 
+interface PacePoint {
+  period: string
+  value: number
+}
+
 interface WeeklyReportEmailProps {
   recipientName?: string
   period?: string
@@ -32,6 +37,44 @@ interface WeeklyReportEmailProps {
   underperformer?: { department: string; reason: string; recommendation: string }
   priorities?: Priority[]
   pdfUrl?: string
+  paceHistory?: PacePoint[]
+}
+
+/**
+ * Render an inline SVG sparkline for the PACE Score history.
+ * Email-safe: no JS, no external assets, fixed pixel sizes.
+ */
+function renderPaceSparkline(points: PacePoint[]): string {
+  if (!points || points.length < 2) return ''
+  const w = 360
+  const h = 64
+  const padX = 8
+  const padY = 10
+  const values = points.map((p) => p.value)
+  const min = Math.min(...values, 0)
+  const max = Math.max(...values, 100)
+  const range = max - min || 1
+  const stepX = (w - padX * 2) / (points.length - 1)
+  const coords = points.map((p, i) => {
+    const x = padX + i * stepX
+    const y = h - padY - ((p.value - min) / range) * (h - padY * 2)
+    return { x, y, value: p.value, period: p.period }
+  })
+  const linePath = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ')
+  const areaPath = `${linePath} L ${coords[coords.length - 1].x.toFixed(1)} ${h - padY} L ${coords[0].x.toFixed(1)} ${h - padY} Z`
+  const last = coords[coords.length - 1]
+  const first = coords[0]
+  const trendUp = last.value >= first.value
+  const stroke = trendUp ? '#10b981' : '#ef4444'
+  const fill = trendUp ? '#d1fae5' : '#fee2e2'
+  const dots = coords
+    .map((c) => `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="2.5" fill="${stroke}" />`)
+    .join('')
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="PACE Score trend">
+    <path d="${areaPath}" fill="${fill}" opacity="0.6" />
+    <path d="${linePath}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    ${dots}
+  </svg>`
 }
 
 const fallback = {
@@ -60,7 +103,13 @@ const WeeklyReportEmail = ({
   underperformer = fallback.underperformer,
   priorities = fallback.priorities,
   pdfUrl,
-}: WeeklyReportEmailProps) => (
+  paceHistory = [],
+}: WeeklyReportEmailProps) => {
+  const sparklineSvg = renderPaceSparkline(paceHistory)
+  const paceLatest = paceHistory.length > 0 ? paceHistory[paceHistory.length - 1].value : null
+  const paceFirst = paceHistory.length > 0 ? paceHistory[0].value : null
+  const paceDelta = paceLatest !== null && paceFirst !== null ? Math.round((paceLatest - paceFirst) * 10) / 10 : null
+  return (
   <Html lang="ro" dir="ltr">
     <Head />
     <Preview>
@@ -87,6 +136,31 @@ const WeeklyReportEmail = ({
           <Text style={sectionLabel}>Executive summary</Text>
           <Text style={summaryText}>{executiveSummary}</Text>
         </Section>
+
+        {/* PACE Score sparkline (last 6 months) */}
+        {sparklineSvg && (
+          <Section style={section}>
+            <Text style={sectionLabel}>PACE Score · ultimele {paceHistory.length} luni</Text>
+            <Section style={sparklineCard}>
+              <Section style={sparklineHeader}>
+                <Text style={sparklineValue}>{paceLatest}</Text>
+                {paceDelta !== null && (
+                  <Text style={paceDelta >= 0 ? sparklineDeltaUp : sparklineDeltaDown}>
+                    {paceDelta >= 0 ? '▲' : '▼'} {Math.abs(paceDelta)} pts
+                  </Text>
+                )}
+              </Section>
+              <div
+                style={{ lineHeight: 0, marginTop: '8px' }}
+                dangerouslySetInnerHTML={{ __html: sparklineSvg }}
+              />
+              <Section style={sparklineFooter}>
+                <Text style={sparklineFooterText}>{paceHistory[0]?.period}</Text>
+                <Text style={sparklineFooterText}>{paceHistory[paceHistory.length - 1]?.period}</Text>
+              </Section>
+            </Section>
+          </Section>
+        )}
 
         {/* PDF download CTA */}
         {pdfUrl && (
@@ -169,7 +243,8 @@ const WeeklyReportEmail = ({
       </Container>
     </Body>
   </Html>
-)
+  )
+}
 
 export const template = {
   component: WeeklyReportEmail,
@@ -208,6 +283,14 @@ export const template = {
       { title: 'Optimizare onboarding flow', owner_hint: 'Product Manager', impact: 'medium' },
     ],
     pdfUrl: 'https://example.com/sample-report.pdf',
+    paceHistory: [
+      { period: '2025-11', value: 62 },
+      { period: '2025-12', value: 65 },
+      { period: '2026-01', value: 68 },
+      { period: '2026-02', value: 71 },
+      { period: '2026-03', value: 74 },
+      { period: '2026-04', value: 78 },
+    ],
   },
 } satisfies TemplateEntry
 
@@ -340,4 +423,41 @@ const footer = {
   textAlign: 'center' as const,
   padding: '16px 32px',
   margin: 0,
+}
+
+// Sparkline styles
+const sparklineCard = {
+  backgroundColor: '#f8fafc',
+  border: '1px solid #e2e8f0',
+  borderRadius: '8px',
+  padding: '14px 16px',
+}
+const sparklineHeader = { display: 'block', marginBottom: '4px' }
+const sparklineValue = {
+  fontSize: '24px',
+  fontWeight: 700,
+  color: '#0f172a',
+  margin: 0,
+  display: 'inline-block',
+}
+const sparklineDeltaUp = {
+  fontSize: '12px',
+  fontWeight: 700,
+  color: '#10b981',
+  margin: '0 0 0 10px',
+  display: 'inline-block',
+}
+const sparklineDeltaDown = {
+  fontSize: '12px',
+  fontWeight: 700,
+  color: '#ef4444',
+  margin: '0 0 0 10px',
+  display: 'inline-block',
+}
+const sparklineFooter = { display: 'block', marginTop: '4px' }
+const sparklineFooterText = {
+  fontSize: '10px',
+  color: '#94a3b8',
+  margin: 0,
+  display: 'inline-block',
 }
