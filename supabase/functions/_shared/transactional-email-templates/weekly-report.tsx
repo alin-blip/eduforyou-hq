@@ -21,6 +21,11 @@ interface Priority {
   impact: 'low' | 'medium' | 'high'
 }
 
+interface PacePoint {
+  period: string
+  value: number
+}
+
 interface WeeklyReportEmailProps {
   recipientName?: string
   period?: string
@@ -32,6 +37,44 @@ interface WeeklyReportEmailProps {
   underperformer?: { department: string; reason: string; recommendation: string }
   priorities?: Priority[]
   pdfUrl?: string
+  paceHistory?: PacePoint[]
+}
+
+/**
+ * Render an inline SVG sparkline for the PACE Score history.
+ * Email-safe: no JS, no external assets, fixed pixel sizes.
+ */
+function renderPaceSparkline(points: PacePoint[]): string {
+  if (!points || points.length < 2) return ''
+  const w = 360
+  const h = 64
+  const padX = 8
+  const padY = 10
+  const values = points.map((p) => p.value)
+  const min = Math.min(...values, 0)
+  const max = Math.max(...values, 100)
+  const range = max - min || 1
+  const stepX = (w - padX * 2) / (points.length - 1)
+  const coords = points.map((p, i) => {
+    const x = padX + i * stepX
+    const y = h - padY - ((p.value - min) / range) * (h - padY * 2)
+    return { x, y, value: p.value, period: p.period }
+  })
+  const linePath = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ')
+  const areaPath = `${linePath} L ${coords[coords.length - 1].x.toFixed(1)} ${h - padY} L ${coords[0].x.toFixed(1)} ${h - padY} Z`
+  const last = coords[coords.length - 1]
+  const first = coords[0]
+  const trendUp = last.value >= first.value
+  const stroke = trendUp ? '#10b981' : '#ef4444'
+  const fill = trendUp ? '#d1fae5' : '#fee2e2'
+  const dots = coords
+    .map((c) => `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="2.5" fill="${stroke}" />`)
+    .join('')
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="PACE Score trend">
+    <path d="${areaPath}" fill="${fill}" opacity="0.6" />
+    <path d="${linePath}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    ${dots}
+  </svg>`
 }
 
 const fallback = {
