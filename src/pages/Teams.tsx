@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Plus, Users, UserPlus, Building2, Crown, Shield, User as UserIcon, Pencil, Trash2 } from "lucide-react";
+import { Plus, Users, UserPlus, Building2, Crown, Shield, User as UserIcon, Pencil, Trash2, Mail } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +65,35 @@ export default function TeamsPage() {
   const [deptDialog, setDeptDialog] = useState<Department | null>(null);
   const [deptDialogOpen, setDeptDialogOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [resending, setResending] = useState(false);
+
+  const handleResendAll = async () => {
+    const pending = members
+      .filter((m) => m.email)
+      .map((m) => m.email as string);
+    if (pending.length === 0) {
+      toast.error("Niciun email găsit");
+      return;
+    }
+    setResending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("resend-invites", {
+        body: { emails: pending },
+      });
+      if (error) throw error;
+      const ok = (data?.results ?? []).filter((r: any) => r.ok).length;
+      const failed = (data?.results ?? []).filter((r: any) => !r.ok);
+      toast.success(`Trimise ${ok}/${pending.length} către ${data?.redirectTo}`);
+      if (failed.length) {
+        console.warn("Failed:", failed);
+        toast.warning(`${failed.length} eșuate — vezi consola`);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Eroare");
+    } finally {
+      setResending(false);
+    }
+  };
 
   const grouped = useMemo(() => {
     const map = new Map<string, ProfileWithRoles[]>();
@@ -101,6 +131,9 @@ export default function TeamsPage() {
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => { setDeptDialog(null); setDeptDialogOpen(true); }}>
               <Building2 className="h-4 w-4 mr-2" /> Departament nou
+            </Button>
+            <Button variant="outline" onClick={handleResendAll} disabled={resending}>
+              <Mail className="h-4 w-4 mr-2" /> {resending ? "Se trimit..." : "Retrimite invitații"}
             </Button>
             <Button onClick={() => setInviteOpen(true)}>
               <UserPlus className="h-4 w-4 mr-2" /> Invită membru
