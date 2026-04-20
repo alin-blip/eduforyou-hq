@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Camera, RefreshCw, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Camera, RefreshCw, TrendingUp, TrendingDown, Minus, History } from "lucide-react";
 import { toast } from "sonner";
 import {
   LineChart,
@@ -53,9 +54,13 @@ function Delta({ current, previous, suffix = "" }: { current: number; previous?:
 }
 
 export function SnapshotsComparison() {
+  const { roles } = useAuth();
+  const canBackfill = roles.includes("ceo") || roles.includes("executive");
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loading, setLoading] = useState(true);
   const [capturing, setCapturing] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillProgress, setBackfillProgress] = useState({ done: 0, total: 0 });
 
   const load = async () => {
     setLoading(true);
@@ -77,6 +82,43 @@ export function SnapshotsComparison() {
     setCapturing(false);
   };
 
+  const backfillHistory = async () => {
+    if (!confirm("Generează snapshot-uri pentru ultimele 12 luni? Cele existente vor fi suprascrise cu datele actuale.")) return;
+    setBackfilling(true);
+    const total = 12;
+    setBackfillProgress({ done: 0, total });
+
+    // Generate target months: last 12 full months (excluding current)
+    const targets: string[] = [];
+    const now = new Date();
+    for (let i = 12; i >= 1; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      targets.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`);
+    }
+
+    let succeeded = 0;
+    let failed = 0;
+    for (let i = 0; i < targets.length; i++) {
+      const { error } = await supabase.rpc("capture_monthly_snapshot", { _target_month: targets[i] });
+      if (error) {
+        failed++;
+        console.error(`Backfill ${targets[i]} failed:`, error.message);
+      } else {
+        succeeded++;
+      }
+      setBackfillProgress({ done: i + 1, total });
+    }
+
+    setBackfilling(false);
+    setBackfillProgress({ done: 0, total: 0 });
+    if (failed === 0) {
+      toast.success(`Backfill complet: ${succeeded} snapshot-uri generate`);
+    } else {
+      toast.warning(`Backfill terminat: ${succeeded} reușite, ${failed} eșuate (vezi console)`);
+    }
+    await load();
+  };
+
   useEffect(() => { load(); }, []);
 
   if (loading) {
@@ -90,12 +132,20 @@ export function SnapshotsComparison() {
         <h3 className="font-display text-lg font-semibold mb-2">Niciun snapshot încă</h3>
         <p className="mb-4 text-sm text-muted-foreground max-w-md mx-auto">
           Snapshot-urile lunare se capturează automat pe 1 ale lunii la 02:00 UTC.
-          Poți captura unul manual acum pentru luna trecută.
+          Poți captura unul manual acum sau backfill ultimele 12 luni.
         </p>
-        <Button onClick={captureNow} disabled={capturing} className="gap-2 bg-gradient-primary">
-          <Camera className={`h-4 w-4 ${capturing ? "animate-pulse" : ""}`} />
-          {capturing ? "Capturez…" : "Capturează snapshot acum"}
-        </Button>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button onClick={captureNow} disabled={capturing || backfilling} className="gap-2 bg-gradient-primary">
+            <Camera className={`h-4 w-4 ${capturing ? "animate-pulse" : ""}`} />
+            {capturing ? "Capturez…" : "Capturează acum"}
+          </Button>
+          {canBackfill && (
+            <Button onClick={backfillHistory} disabled={backfilling || capturing} variant="outline" className="gap-2">
+              <History className={`h-4 w-4 ${backfilling ? "animate-pulse" : ""}`} />
+              {backfilling ? `Backfill ${backfillProgress.done}/${backfillProgress.total}…` : "Backfill 12 luni"}
+            </Button>
+          )}
+        </div>
       </Card>
     );
   }
@@ -126,11 +176,23 @@ export function SnapshotsComparison() {
             Ultim: {latest.period} · capturate automat pe 1 ale lunii
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={load} className="gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={load} className="gap-2" disabled={backfilling}>
             <RefreshCw className="h-3.5 w-3.5" /> Refresh
           </Button>
-          <Button size="sm" onClick={captureNow} disabled={capturing} className="gap-2 bg-gradient-primary">
+          {canBackfill && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={backfillHistory}
+              disabled={backfilling || capturing}
+              className="gap-2"
+            >
+              <History className={`h-3.5 w-3.5 ${backfilling ? "animate-pulse" : ""}`} />
+              {backfilling ? `Backfill ${backfillProgress.done}/${backfillProgress.total}` : "Backfill 12 luni"}
+            </Button>
+          )}
+          <Button size="sm" onClick={captureNow} disabled={capturing || backfilling} className="gap-2 bg-gradient-primary">
             <Camera className={`h-3.5 w-3.5 ${capturing ? "animate-pulse" : ""}`} />
             Capture now
           </Button>
