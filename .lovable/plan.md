@@ -1,105 +1,89 @@
 
 
-# Val 2.5 — Strategic Layer (BizzOS-grade upgrade)
+# Audit Val 1 → Val 2.5 + Teams · Stare actuală EduForYou OS
 
-## Ce am identificat ca lipsă față de BizzOS Orchestrate
+## Ce e LIVRAT și funcțional
 
-Am construit deja: CEO Cockpit, OKR/KPI Engine, Teams, CICLES, Tasks, Virtual CFO (schelet), Project Hub, Integrări (schelet), Reports.
+### ✅ Val 1 — Foundation
+- Design system dark premium (HSL tokens, glassmorphism, gradients)
+- App shell complet: `AppLayout`, `AppSidebar`, `TopBar`
+- CEO Cockpit: PaceScore, KpiCards, RevenueChart, DepartmentHeatmap, AlertsFeed, ProjectQuickLinks
+- Routing complet pentru toate modulele
 
-Ce ne lipsește pentru a atinge nivelul "Orchestrate":
+### ✅ Val 2 — Auth & OKR
+- Lovable Cloud activ (auth + DB)
+- Tabele: `profiles`, `user_roles`, `departments`, `objectives`, `key_results`
+- Auth email/parolă + magic link, ProtectedRoute, primul user devine CEO automat
+- OKR Engine cu CRUD complet, filtre quarter/level/status, calcul progres din KR
 
-| Modul BizzOS | Status actual EduForYou OS | Acțiune |
+### ✅ Val 2.5 — Strategic Layer
+- Tabele: `entities`, `vision`, `strategy_trees`, `pipeline_stages`, `deals`, `benchmarks`, `ai_insights`
+- Vivid VISION builder (`/vision`)
+- Strategy Trees (Value/Profit/KPI) (`/strategy-trees`)
+- Sales Pipeline Kanban (`/sales`)
+- Accountability Matrix (`/accountability`)
+- AI Copilot drawer global (Cmd+K) — edge function `ai-copilot` cu Gemini 2.5 Pro
+- AI CFO Insights + Scenario Engine — edge function `ai-cfo-insights`
+- Multi-Entity Switcher în TopBar
+
+### ✅ Teams Module
+- Pagina `/teams` cu organigramă pe departamente
+- `MemberDialog`, `DepartmentDialog`, `InviteMemberDialog`
+- Edge function `invite-member` cu validare roluri
+- Stats: cost lunar total, capacitate, buget per departament
+
+## Ce NU e încă implementat (rămas din plan)
+
+| Modul | Stare | Prioritate |
 |---|---|---|
-| **Vivid VISION** (sistem strategic 3 ani) | ❌ lipsă | **adaugă** |
-| **Value Tree / Profit Tree / KPI Tree** | ❌ lipsă (avem doar liste) | **adaugă** |
-| **KPI cross-department** (corelații) | ⚠ parțial | **extinde** |
-| **Scenario Engine AI** (simulări multiple) | ⚠ doar sliders simple | **extinde cu AI** |
-| **AI Copilot decizional** (chat strategic) | ❌ lipsă | **adaugă** |
-| **AI CFO Strategic** (analiză + recomandări) | ❌ doar tracking | **adaugă strat AI** |
-| **EBITDA impact per KPI** | ❌ lipsă | **adaugă** |
-| **Benchmarking industrie** | ❌ lipsă | **adaugă (manual now, API later)** |
-| **Multi-entity / divizii** (holding view) | ⚠ ready, dar fără UI | **adaugă switcher** |
-| **Accountability system** (cine răspunde de ce KPI) | ⚠ parțial | **extinde** |
-| **Sales pipeline + forecast** | ❌ lipsă (vine din GHL) | **adaugă pagină dedicată** |
-| **Profit per linie de business / per client** | ⚠ doar revenue per sursă | **extinde CFO** |
+| **Tasks engine** (Kanban + List + Calendar legat de KR) | ❌ doar placeholder | 🔴 înalt |
+| **CFO real cu tabele finance** (revenue/expenses/invoices/debits) | ❌ doar mock în AI | 🔴 înalt |
+| **CICLES™** (daily/weekly/monthly/quarterly meetings) | ❌ doar placeholder | 🟡 mediu |
+| **Project Hub** (carduri Agent Hub/Partners/Webinar cu metrici) | ❌ doar placeholder | 🟡 mediu |
+| **Reports & 360° comparison** (PDF export, AI weekly summary) | ❌ doar placeholder | 🟢 scăzut |
+| **Strategy Trees ↔ OKR linkage** | ❌ trees izolate | 🟡 mediu |
+| **Workload view** pe Teams (cine lucrează la ce) | ❌ lipsește | 🟢 scăzut |
+| **Settings page** completă | ❌ doar placeholder | 🟢 scăzut |
+| **Val 3 — Integrări OAuth** (Meta/GA4/GTM/GHL/SimilarWeb) | ⏸ amânat la final | 🔵 ulterior |
 
-## Ce livrăm în Val 2.5
+## Plan AUDIT & FIX (sprint curent)
 
-### 1. Vivid VISION Builder
-Pagină dedicată `/vision` unde definești:
-- **Vision pe 3 ani** (story narativ + metrici țintă)
-- **Mission & Core values**
-- **Big Hairy Audacious Goal** (BHAG)
-- **Brand promise**
-- Vizualizare timeline 3 ani cu milestones anuale → leagă automat de OKR-urile trimestriale
+Înainte de a trece la modulul următor, executăm un audit tehnic complet al ce am livrat:
 
-### 2. Strategy Trees (Value · Profit · KPI)
-Componentă `TreeBuilder` reutilizabilă (drag & drop ierarhic):
-- **Value Tree**: cum se creează valoare pentru client → leagă de KPI
-- **Profit Tree**: revenue → cost → margin (descompunere vizuală pe linii business: B2C, Agent Hub, Partners SAAS, Webinar)
-- **KPI Tree**: KPI companie → KPI departament → KPI individual (cascade vizuală)
-- Salvate în tabel nou `strategy_trees` (jsonb pentru flexibilitate)
+### Pas 1 — Audit funcțional automat (read-only)
+- **Database health**: verific RLS policies pe toate tabelele (linter), date orfane, FK lipsă
+- **Edge functions**: testez `ai-copilot`, `ai-cfo-insights`, `invite-member` cu curl + verificare loguri
+- **Auth flow**: verific că trigger-ul `handle_new_user` rulează corect și asignează rolul CEO
+- **Console & runtime errors**: scanez logurile browser și network requests pe paginile cheie
+- **Security scan**: run `security--run_security_scan` pentru a prinde eventuale leak-uri RLS
 
-### 3. AI Copilot Decizional (Lovable AI)
-Drawer global accesibil cu Cmd+K din orice pagină:
-- Folosește **google/gemini-2.5-pro** prin Lovable AI Gateway (fără API key)
-- Context: vede toate KPI, OKR, finance data ale companiei
-- Întrebări tip: "De ce a scăzut conversia luna asta?", "Ce ar trebui să prioritizez?", "Generează un plan pentru Q1"
-- Edge function `ai-copilot` cu RLS pe context (vede doar ce poate vedea user-ul)
+### Pas 2 — Listă defecte + fix-uri (după audit)
+Voi întocmi o listă structurată de bug-uri/inconsistențe găsite și voi propune fix-urile minime necesare. Exemple posibile:
+- Lipsă FK între tabele (ex: `objectives.owner_id` → `profiles.id`)
+- RLS prea permisiv (ex: `Authenticated view all` pe ai_insights când ar trebui filtrat per entity)
+- Lipsă seed pentru `pipeline_stages` și `entities` (default entity)
+- Trigger lipsă pentru `updated_at` pe tabele noi
+- Validări UI lipsă, edge cases la formulare
 
-### 4. AI CFO Strategic
-Tab nou în `/cfo` → "AI Insights":
-- Analizează automat P&L, cashflow, runway
-- Generează **3 recomandări săptămânale** (ex: "Reduceți spend pe canal X cu 20%, ROAS scăzut")
-- **Scenario Engine avansat**: descrii în limbaj natural ("Dacă angajez 3 oameni noi și cresc spend Meta cu 30%"), AI calculează impact pe runway/profit
-- **EBITDA impact per KPI**: pentru fiecare KPI, AI estimează cât contribuie la EBITDA
+### Pas 3 — Aplicare fix-uri (un singur batch)
+Toate fix-urile într-o singură migrare + un singur set de modificări front-end, cu verificare după.
 
-### 5. Sales Pipeline & Forecast
-Pagină nouă `/sales`:
-- Pipeline Kanban (Lead → Qualified → Proposal → Won/Lost)
-- Forecast vânzări (luna curentă + 3 luni)
-- Funnel pe canale (organic, Meta, Google, GHL, partners)
-- Tabel `deals` + `pipeline_stages` (manual now, sync din GHL în Val 3)
+### Pas 4 — Smoke test end-to-end
+Un checklist concret pe care îl rulăm împreună:
+1. Login CEO → vezi cockpit
+2. Creezi obiectiv + 2 KR → progres calculat corect
+3. Inviți un membru → primește email
+4. Adaugi un deal în pipeline → forecast se actualizează
+5. Apeși Cmd+K → Copilot răspunde cu context real
+6. Generezi AI CFO insight → primești 3 recomandări
 
-### 6. Multi-Entity Switcher
-Top-bar adaugă selector de entitate (acum doar "EduForYou", dar pregătit pentru holding):
-- Tabel nou `entities` (companii din holding)
-- Toate datele filtrate pe `entity_id`
-- "All entities" view pentru consolidare
+### Pas 5 — Decizie modul următor
+După audit curat, alegem ce construim mai departe (Tasks / CFO real / CICLES) — integrările OAuth rămân ultimele, conform deciziei tale.
 
-### 7. Accountability Matrix
-Pagină nouă `/accountability`:
-- Matrice vizuală: KPI × Owner (cine răspunde de ce)
-- Status per owner (on track / at risk / off track)
-- Alertă automată dacă un KPI nu are owner
-
-### 8. Benchmarking (manual seed)
-Tab în `/reports`:
-- Editor manual pentru benchmarks pe industrie (EdTech: avg CAC, LTV, churn, etc.)
-- Comparație side-by-side cu metricile tale
-- Pregătit pentru SimilarWeb sync în Val 3
-
-## Tabele noi
-
-```text
-strategy_trees     (id, type [value|profit|kpi], data jsonb, entity_id)
-vision             (id, story, mission, values jsonb, bhag, milestones jsonb, entity_id)
-deals              (id, title, value, stage, owner_id, source, expected_close)
-pipeline_stages    (id, name, position, probability)
-entities           (id, name, slug, logo_url)
-benchmarks         (id, metric, industry, value, source)
-ai_insights        (id, type, content, generated_at, entity_id)
-```
-
-## Ordine de livrare (1 sesiune)
-
-1. Multi-entity (fundație) + Vivid VISION
-2. Strategy Trees (Value · Profit · KPI)
-3. Sales Pipeline + Accountability Matrix
-4. AI Copilot decizional (drawer global)
-5. AI CFO Strategic + Scenario Engine
-6. Benchmarking + finisaje
-
-## Ce rămâne pentru Val 3 (neschimbat)
-Integrări reale OAuth: Meta Ads, GA4, GTM, GHL, SimilarWeb. Acestea vor alimenta automat KPI Tree, Sales Pipeline și Benchmarking.
+## Output audit
+La final livrez un raport structurat:
+- ✅ Ce funcționează perfect
+- ⚠ Ce funcționează dar trebuie îmbunătățit
+- 🔴 Ce e rupt și am reparat
+- 📋 Recomandare pentru sprint următor
 
