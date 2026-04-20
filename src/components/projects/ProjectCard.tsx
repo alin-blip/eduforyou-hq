@@ -85,6 +85,13 @@ export function ProjectCard({ project, metrics, onEdit, onMetrics }: Props) {
         </div>
       )}
 
+      {lastSyncLabel && (
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-3">
+          <Clock className="h-3 w-3" />
+          <span>Ultima actualizare {lastSyncLabel}</span>
+        </div>
+      )}
+
       <div className="flex items-center gap-2">
         <Button variant="outline" size="sm" className="flex-1" onClick={onMetrics}>
           <BarChart3 className="h-3.5 w-3.5 mr-1.5" /> Metrici
