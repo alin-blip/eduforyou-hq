@@ -283,6 +283,14 @@ export const template = {
       { title: 'Optimizare onboarding flow', owner_hint: 'Product Manager', impact: 'medium' },
     ],
     pdfUrl: 'https://example.com/sample-report.pdf',
+    paceHistory: [
+      { period: '2025-11', value: 62 },
+      { period: '2025-12', value: 65 },
+      { period: '2026-01', value: 68 },
+      { period: '2026-02', value: 71 },
+      { period: '2026-03', value: 74 },
+      { period: '2026-04', value: 78 },
+    ],
   },
 } satisfies TemplateEntry
 
