@@ -176,11 +176,23 @@ export function SnapshotsComparison() {
             Ultim: {latest.period} · capturate automat pe 1 ale lunii
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={load} className="gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={load} className="gap-2" disabled={backfilling}>
             <RefreshCw className="h-3.5 w-3.5" /> Refresh
           </Button>
-          <Button size="sm" onClick={captureNow} disabled={capturing} className="gap-2 bg-gradient-primary">
+          {canBackfill && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={backfillHistory}
+              disabled={backfilling || capturing}
+              className="gap-2"
+            >
+              <History className={`h-3.5 w-3.5 ${backfilling ? "animate-pulse" : ""}`} />
+              {backfilling ? `Backfill ${backfillProgress.done}/${backfillProgress.total}` : "Backfill 12 luni"}
+            </Button>
+          )}
+          <Button size="sm" onClick={captureNow} disabled={capturing || backfilling} className="gap-2 bg-gradient-primary">
             <Camera className={`h-3.5 w-3.5 ${capturing ? "animate-pulse" : ""}`} />
             Capture now
           </Button>
