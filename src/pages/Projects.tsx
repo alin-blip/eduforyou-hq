@@ -10,11 +10,12 @@ import { ProjectDialog } from "@/components/projects/ProjectDialog";
 import { MetricsDialog } from "@/components/projects/MetricsDialog";
 
 export default function ProjectsPage() {
-  const { projects, metrics, loading } = useProjects();
+  const { projects, metrics, loading, syncMetrics } = useProjects();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [metricsOpen, setMetricsOpen] = useState(false);
   const [selected, setSelected] = useState<Project | null>(null);
   const [filter, setFilter] = useState<string>("all");
+  const [syncing, setSyncing] = useState(false);
 
   const metricsByProject = useMemo(() => {
     const map = new Map<string, typeof metrics>();
