@@ -21,7 +21,9 @@ import {
   useTeamMembers,
   useDepartmentsList,
   useDeleteDepartment,
+  useTeamAuthStatus,
   type AppRole,
+  type AuthStatusRow,
   type Department,
   type ProfileWithRoles,
 } from "@/hooks/useTeams";
@@ -59,6 +61,7 @@ export default function TeamsPage() {
   const { isAdmin } = useAuth();
   const { data: members = [], isLoading } = useTeamMembers();
   const { data: departments = [] } = useDepartmentsList();
+  const { data: authStatus } = useTeamAuthStatus();
   const deleteDept = useDeleteDepartment();
 
   const [memberDialog, setMemberDialog] = useState<ProfileWithRoles | null>(null);
@@ -224,7 +227,7 @@ export default function TeamsPage() {
                     <p className="text-sm text-muted-foreground italic">Niciun membru în acest departament.</p>
                   ) : (
                     <div className="space-y-2">
-                      {deptMembers.map((m) => <MemberRow key={m.id} member={m} onClick={() => setMemberDialog(m)} />)}
+                      {deptMembers.map((m) => <MemberRow key={m.id} member={m} status={authStatus?.get(m.id)} onClick={() => setMemberDialog(m)} />)}
                     </div>
                   )}
                 </CardContent>
@@ -243,7 +246,7 @@ export default function TeamsPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 {grouped.get("__unassigned__")!.map((m) => (
-                  <MemberRow key={m.id} member={m} onClick={() => setMemberDialog(m)} />
+                  <MemberRow key={m.id} member={m} status={authStatus?.get(m.id)} onClick={() => setMemberDialog(m)} />
                 ))}
               </CardContent>
             </Card>
@@ -268,10 +271,33 @@ export default function TeamsPage() {
   );
 }
 
-function MemberRow({ member, onClick }: { member: ProfileWithRoles; onClick: () => void }) {
+function MemberRow({ member, status, onClick }: { member: ProfileWithRoles; status?: AuthStatusRow; onClick: () => void }) {
   const role = topRole(member.roles);
   const meta = ROLE_META[role];
   const Icon = meta.icon;
+
+  // Derive auth status
+  let statusLabel = "Necunoscut";
+  let statusVariant: "default" | "secondary" | "outline" | "destructive" = "outline";
+  let statusTitle = "Status auth indisponibil";
+  if (status) {
+    if (status.last_sign_in_at) {
+      statusLabel = "Activ";
+      statusVariant = "default";
+      statusTitle = `Ultima logare: ${new Date(status.last_sign_in_at).toLocaleString("ro-RO")}`;
+    } else if (status.email_confirmed_at) {
+      statusLabel = "Confirmat";
+      statusVariant = "secondary";
+      statusTitle = `Email confirmat: ${new Date(status.email_confirmed_at).toLocaleString("ro-RO")} — încă nu s-a logat`;
+    } else {
+      statusLabel = "În așteptare";
+      statusVariant = "outline";
+      statusTitle = status.invited_at
+        ? `Invitat: ${new Date(status.invited_at).toLocaleString("ro-RO")} — email neconfirmat`
+        : "Email neconfirmat";
+    }
+  }
+
   return (
     <button
       onClick={onClick}
@@ -291,6 +317,9 @@ function MemberRow({ member, onClick }: { member: ProfileWithRoles; onClick: () 
         {member.monthly_cost != null && (
           <span className="text-xs text-muted-foreground hidden sm:inline">€{Number(member.monthly_cost).toLocaleString("ro-RO")}</span>
         )}
+        <Badge variant={statusVariant} className="hidden md:inline-flex" title={statusTitle}>
+          {statusLabel}
+        </Badge>
         <Badge variant={meta.variant} className="gap-1">
           <Icon className="h-3 w-3" /> {meta.label}
         </Badge>

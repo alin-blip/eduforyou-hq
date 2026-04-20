@@ -145,6 +145,29 @@ export function useDeleteDepartment() {
   });
 }
 
+export type AuthStatusRow = {
+  user_id: string;
+  email_confirmed_at: string | null;
+  last_sign_in_at: string | null;
+  invited_at: string | null;
+};
+
+export function useTeamAuthStatus() {
+  return useQuery({
+    queryKey: ["team-auth-status"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_team_auth_status");
+      if (error) {
+        // Members fără rol manager — RPC va arunca; returnăm map gol
+        return new Map<string, AuthStatusRow>();
+      }
+      const map = new Map<string, AuthStatusRow>();
+      (data ?? []).forEach((r: any) => map.set(r.user_id, r as AuthStatusRow));
+      return map;
+    },
+  });
+}
+
 export function useInviteMember() {
   const qc = useQueryClient();
   return useMutation({
