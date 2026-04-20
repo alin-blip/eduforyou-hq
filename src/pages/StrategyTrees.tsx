@@ -1,15 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { GitBranch, Plus, Save, Trash2, ChevronDown, ChevronRight } from "lucide-react";
+import { GitBranch, Plus, Save, Trash2, ChevronDown, ChevronRight, Link2, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEntity } from "@/hooks/useEntity";
 import { useAuth } from "@/hooks/useAuth";
+import { useObjectives } from "@/hooks/useOkr";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { NodeOkrLinker } from "@/components/strategy/NodeOkrLinker";
 
 type TreeType = "value" | "profit" | "kpi";
 
@@ -18,6 +22,8 @@ interface TreeNode {
   label: string;
   metric?: string;
   value?: number;
+  objective_id?: string;
+  key_result_id?: string;
   children: TreeNode[];
 }
 
@@ -68,6 +74,7 @@ const blankTree = (type: TreeType): Tree => ({
 export default function StrategyTreesPage() {
   const { current } = useEntity();
   const { user } = useAuth();
+  const { data: objectives } = useObjectives();
   const [activeType, setActiveType] = useState<TreeType>("value");
   const [trees, setTrees] = useState<Record<TreeType, Tree>>({
     value: blankTree("value"),
@@ -75,6 +82,37 @@ export default function StrategyTreesPage() {
     kpi: blankTree("kpi"),
   });
   const [saving, setSaving] = useState(false);
+
+  // Build progress map: objectiveId -> progress%, krId -> progress%
+  const progressMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    objectives?.forEach((o) => {
+      map[`obj:${o.id}`] = o.progress;
+      o.key_results.forEach((k) => {
+        const start = Number(k.start_value ?? 0);
+        const target = Number(k.target_value ?? 0);
+        const current = Number(k.current_value ?? 0);
+        const range = target - start;
+        const pct = range !== 0 ? Math.max(0, Math.min(100, Math.round(((current - start) / range) * 100))) : 0;
+        map[`kr:${k.id}`] = pct;
+      });
+    });
+    return map;
+  }, [objectives]);
+
+  // Compute aggregated progress per node (recursive). Linked node uses link value; otherwise avg of children.
+  const computeProgress = (node: TreeNode): number | null => {
+    if (node.objective_id && progressMap[`obj:${node.objective_id}`] !== undefined) {
+      return progressMap[`obj:${node.objective_id}`];
+    }
+    if (node.key_result_id && progressMap[`kr:${node.key_result_id}`] !== undefined) {
+      return progressMap[`kr:${node.key_result_id}`];
+    }
+    if (node.children.length === 0) return null;
+    const childVals = node.children.map(computeProgress).filter((v): v is number => v !== null);
+    if (childVals.length === 0) return null;
+    return Math.round(childVals.reduce((s, v) => s + v, 0) / childVals.length);
+  };
 
   useEffect(() => {
     if (!current) return;
@@ -157,7 +195,7 @@ export default function StrategyTreesPage() {
         <div>
           <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-border/50 bg-card/50 px-3 py-1 text-xs">
             <GitBranch className="h-3 w-3 text-primary" />
-            <span className="text-muted-foreground">Strategy Trees</span>
+            <span className="text-muted-foreground">Strategy Trees · OKR linked</span>
           </div>
           <h1 className="font-display text-3xl font-semibold">{meta.title}</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{meta.description}</p>
@@ -184,6 +222,7 @@ export default function StrategyTreesPage() {
                 onUpdate={updateNode}
                 onRemove={removeNode}
                 color={meta.color}
+                computeProgress={computeProgress}
               />
             </Card>
           </TabsContent>
@@ -200,6 +239,7 @@ function NodeView({
   onUpdate,
   onRemove,
   color,
+  computeProgress,
 }: {
   nodes: TreeNode[];
   depth: number;
@@ -207,6 +247,7 @@ function NodeView({
   onUpdate: (id: string, patch: Partial<TreeNode>) => void;
   onRemove: (id: string) => void;
   color: string;
+  computeProgress: (n: TreeNode) => number | null;
 }) {
   return (
     <div className={cn("space-y-2", depth > 0 && "ml-8 border-l border-border/40 pl-4")}>
@@ -219,6 +260,7 @@ function NodeView({
           onUpdate={onUpdate}
           onRemove={onRemove}
           color={color}
+          computeProgress={computeProgress}
         />
       ))}
     </div>
@@ -232,6 +274,7 @@ function NodeRow({
   onUpdate,
   onRemove,
   color,
+  computeProgress,
 }: {
   node: TreeNode;
   depth: number;
@@ -239,9 +282,13 @@ function NodeRow({
   onUpdate: (id: string, patch: Partial<TreeNode>) => void;
   onRemove: (id: string) => void;
   color: string;
+  computeProgress: (n: TreeNode) => number | null;
 }) {
   const [expanded, setExpanded] = useState(true);
+  const [linkerOpen, setLinkerOpen] = useState(false);
   const hasKids = node.children.length > 0;
+  const linked = !!(node.objective_id || node.key_result_id);
+  const progress = computeProgress(node);
 
   return (
     <motion.div
@@ -249,7 +296,12 @@ function NodeRow({
       animate={{ opacity: 1, y: 0 }}
       className="space-y-2"
     >
-      <div className="group flex items-center gap-2 rounded-lg border border-border/50 bg-card/40 p-2 transition-colors hover:border-primary/40">
+      <div
+        className={cn(
+          "group flex flex-wrap items-center gap-2 rounded-lg border bg-card/40 p-2 transition-colors",
+          linked ? "border-primary/40 shadow-[0_0_0_1px_hsl(var(--primary)/0.1)]" : "border-border/50 hover:border-primary/40",
+        )}
+      >
         {hasKids ? (
           <button onClick={() => setExpanded(!expanded)} className="text-muted-foreground hover:text-foreground">
             {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -261,7 +313,7 @@ function NodeRow({
         <Input
           value={node.label}
           onChange={(e) => onUpdate(node.id, { label: e.target.value })}
-          className="h-8 flex-1 border-transparent bg-transparent focus:border-border"
+          className="h-8 min-w-[140px] flex-1 border-transparent bg-transparent focus:border-border"
         />
         <Input
           value={node.metric ?? ""}
@@ -276,6 +328,33 @@ function NodeRow({
           placeholder="Valoare"
           className="h-8 w-24 text-xs"
         />
+
+        {progress !== null && (
+          <div className="flex items-center gap-1.5">
+            <Progress value={progress} className="h-1.5 w-16" />
+            <span className="text-xs font-semibold tabular-nums text-muted-foreground">{progress}%</span>
+          </div>
+        )}
+
+        {linked && (
+          <Badge variant="outline" className="h-5 gap-1 border-primary/40 px-1.5 text-[10px]">
+            <Target className="h-2.5 w-2.5 text-primary" />
+            {node.objective_id ? "OBJ" : "KR"}
+          </Badge>
+        )}
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setLinkerOpen(true)}
+          className={cn(
+            "h-7 w-7 opacity-60 group-hover:opacity-100",
+            linked && "text-primary opacity-100",
+          )}
+          title="Conectează la OKR"
+        >
+          <Link2 className="h-3.5 w-3.5" />
+        </Button>
         <Button variant="ghost" size="icon" onClick={() => onAdd(node.id)} className="h-7 w-7 opacity-60 group-hover:opacity-100">
           <Plus className="h-3.5 w-3.5" />
         </Button>
@@ -298,8 +377,22 @@ function NodeRow({
           onUpdate={onUpdate}
           onRemove={onRemove}
           color={color}
+          computeProgress={computeProgress}
         />
       )}
+
+      <NodeOkrLinker
+        open={linkerOpen}
+        onOpenChange={setLinkerOpen}
+        nodeLabel={node.label}
+        currentLink={{ objective_id: node.objective_id, key_result_id: node.key_result_id }}
+        onLink={(link) =>
+          onUpdate(node.id, {
+            objective_id: link.objective_id,
+            key_result_id: link.key_result_id,
+          })
+        }
+      />
     </motion.div>
   );
 }
