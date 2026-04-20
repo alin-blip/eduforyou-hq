@@ -764,6 +764,51 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          link: string | null
+          message: string | null
+          read: boolean
+          read_at: string | null
+          severity: Database["public"]["Enums"]["notification_severity"]
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          link?: string | null
+          message?: string | null
+          read?: boolean
+          read_at?: string | null
+          severity?: Database["public"]["Enums"]["notification_severity"]
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          link?: string | null
+          message?: string | null
+          read?: boolean
+          read_at?: string | null
+          severity?: Database["public"]["Enums"]["notification_severity"]
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       objectives: {
         Row: {
           created_at: string
@@ -1438,6 +1483,14 @@ export type Database = {
       meeting_item_kind: "agenda" | "decision" | "action" | "blocker" | "note"
       meeting_item_status: "open" | "in_progress" | "done" | "cancelled"
       meeting_status: "scheduled" | "in_progress" | "completed" | "cancelled"
+      notification_kind:
+        | "task"
+        | "meeting"
+        | "okr"
+        | "sync"
+        | "invite"
+        | "system"
+      notification_severity: "info" | "success" | "warning" | "critical"
       objective_level: "company" | "department" | "individual"
       objective_status:
         | "on_track"
@@ -1603,6 +1656,8 @@ export const Constants = {
       meeting_item_kind: ["agenda", "decision", "action", "blocker", "note"],
       meeting_item_status: ["open", "in_progress", "done", "cancelled"],
       meeting_status: ["scheduled", "in_progress", "completed", "cancelled"],
+      notification_kind: ["task", "meeting", "okr", "sync", "invite", "system"],
+      notification_severity: ["info", "success", "warning", "critical"],
       objective_level: ["company", "department", "individual"],
       objective_status: [
         "on_track",
