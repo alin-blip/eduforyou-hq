@@ -313,6 +313,12 @@ export default function SettingsPage() {
         </TabsContent>
 
         {isAdmin && (
+          <TabsContent value="reports">
+            <ReportScheduleCard />
+          </TabsContent>
+        )}
+
+        {isAdmin && (
           <TabsContent value="organization">
             <div className="space-y-4">
               <Card>
