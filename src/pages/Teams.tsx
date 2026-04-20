@@ -348,13 +348,118 @@ function MemberRow({
   onClick,
   onResend,
   resending,
+  canEditRoles,
+  onChangeRole,
+  savingRole,
 }: {
   member: ProfileWithRoles;
   status?: AuthStatusRow;
   onClick: () => void;
   onResend?: (email: string) => void | Promise<void>;
   resending?: boolean;
+  canEditRoles?: boolean;
+  onChangeRole?: (userId: string, role: AppRole) => void | Promise<void>;
+  savingRole?: boolean;
 }) {
+  const role = topRole(member.roles);
+  const meta = ROLE_META[role];
+  const Icon = meta.icon;
+
+  // Derive auth status
+  let statusLabel = "Necunoscut";
+  let statusVariant: "default" | "secondary" | "outline" | "destructive" = "outline";
+  let statusTitle = "Status auth indisponibil";
+  let isPending = true;
+  if (status) {
+    if (status.last_sign_in_at) {
+      statusLabel = "Activ";
+      statusVariant = "default";
+      statusTitle = `Ultima logare: ${new Date(status.last_sign_in_at).toLocaleString("ro-RO")}`;
+      isPending = false;
+    } else if (status.email_confirmed_at) {
+      statusLabel = "Confirmat";
+      statusVariant = "secondary";
+      statusTitle = `Email confirmat: ${new Date(status.email_confirmed_at).toLocaleString("ro-RO")} — încă nu s-a logat`;
+      isPending = false;
+    } else {
+      statusLabel = "În așteptare";
+      statusVariant = "outline";
+      statusTitle = status.invited_at
+        ? `Invitat: ${new Date(status.invited_at).toLocaleString("ro-RO")} — email neconfirmat`
+        : "Email neconfirmat";
+    }
+  }
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
+      className="flex w-full items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2 text-left hover:bg-muted/50 transition-colors cursor-pointer"
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <Avatar className="h-9 w-9">
+          {member.avatar_url && <AvatarImage src={member.avatar_url} />}
+          <AvatarFallback>{getInitials(member.full_name, member.email)}</AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <p className="text-sm font-medium truncate">{member.full_name ?? member.email}</p>
+          <p className="text-xs text-muted-foreground truncate">{member.job_title ?? member.email}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        {member.monthly_cost != null && (
+          <span className="text-xs text-muted-foreground hidden sm:inline">€{Number(member.monthly_cost).toLocaleString("ro-RO")}</span>
+        )}
+        <Badge variant={statusVariant} className="hidden md:inline-flex" title={statusTitle}>
+          {statusLabel}
+        </Badge>
+        {canEditRoles && onChangeRole ? (
+          <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+            <Select
+              value={role}
+              onValueChange={(v) => onChangeRole(member.id, v as AppRole)}
+              disabled={savingRole}
+            >
+              <SelectTrigger className="h-8 w-[120px] text-xs" title="Schimbă rolul">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(ROLE_META) as AppRole[]).map((r) => {
+                  const RIcon = ROLE_META[r].icon;
+                  return (
+                    <SelectItem key={r} value={r}>
+                      <span className="flex items-center gap-2">
+                        <RIcon className="h-3 w-3" /> {ROLE_META[r].label}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : (
+          <Badge variant={meta.variant} className="gap-1">
+            <Icon className="h-3 w-3" /> {meta.label}
+          </Badge>
+        )}
+        {isPending && onResend && member.email && (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={resending}
+            onClick={(e) => { e.stopPropagation(); onResend(member.email as string); }}
+            title="Retrimite invitația"
+          >
+            <Send className="h-3.5 w-3.5 sm:mr-1.5" />
+            <span className="hidden sm:inline">{resending ? "..." : "Retrimite"}</span>
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
   const role = topRole(member.roles);
   const meta = ROLE_META[role];
   const Icon = meta.icon;
