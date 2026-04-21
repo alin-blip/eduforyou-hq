@@ -192,6 +192,9 @@ Deno.serve(async (req) => {
       const c = o.contact ?? {};
       const joined = [c.firstName, c.lastName].filter(Boolean).join(" ").trim();
       const fullName = c.name ?? (joined.length > 0 ? joined : null);
+      // Fallback: dacă owner-ul nu e setat, folosim primul follower (de obicei consultantul EN)
+      const followers = (o as unknown as { followers?: string[] }).followers ?? [];
+      const assignedTo = o.assignedTo ?? (followers.length > 0 ? followers[0] : null);
       return {
         ghl_opportunity_id: o.id,
         ghl_contact_id: o.contactId ?? c.id ?? `opp:${o.id}`,
@@ -207,7 +210,7 @@ Deno.serve(async (req) => {
         monetary_value: o.monetaryValue ?? 0,
         currency: "EUR",
         tags: c.tags ?? [],
-        assigned_to: o.assignedTo ?? null,
+        assigned_to: assignedTo,
         ghl_created_at: o.createdAt ?? null,
         ghl_updated_at: o.updatedAt ?? null,
         raw_payload: { opportunity: o },
