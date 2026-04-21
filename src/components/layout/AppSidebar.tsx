@@ -108,6 +108,16 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const { roles } = useAuth();
+
+  const canSee = (item: NavItem) => {
+    if (!item.roles || item.roles.length === 0) return true;
+    return item.roles.some((r) => roles.includes(r));
+  };
+
+  const visibleGroups = navGroups
+    .map((g) => ({ ...g, items: g.items.filter(canSee) }))
+    .filter((g) => g.items.length > 0);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
