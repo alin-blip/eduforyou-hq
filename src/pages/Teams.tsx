@@ -46,6 +46,7 @@ const ROLE_META: Record<AppRole, { label: string; icon: typeof Crown; variant: "
   ceo: { label: "CEO", icon: Crown, variant: "default" },
   executive: { label: "Executive", icon: Shield, variant: "default" },
   manager: { label: "Manager", icon: Shield, variant: "secondary" },
+  agent_manager: { label: "Agent Manager", icon: Shield, variant: "secondary" },
   member: { label: "Member", icon: UserIcon, variant: "outline" },
 };
 
