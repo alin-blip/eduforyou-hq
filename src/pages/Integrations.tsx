@@ -88,18 +88,43 @@ export default function IntegrationsPage() {
     queryKey: ["ghl-stats"],
     enabled: isManager && ghlConnected,
     queryFn: async () => {
-      const [leads, lastSync] = await Promise.all([
+      const [leads, lastSync, masterPipeline, stagesAgg] = await Promise.all([
         supabase.from("ghl_leads").select("id", { count: "exact", head: true }),
         supabase
           .from("ghl_sync_log")
-          .select("created_at, success, contacts_synced, opportunities_synced, error_message")
+          .select("created_at, success, contacts_synced, opportunities_synced, error_message, duration_ms")
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle(),
+        supabase
+          .from("ghl_pipelines")
+          .select("id, name, stages, total_opportunities")
+          .eq("is_master", true)
+          .maybeSingle(),
+        supabase
+          .from("ghl_leads")
+          .select("stage_name")
+          .limit(20000),
       ]);
+      const stageCounts = new Map<string, number>();
+      (stagesAgg.data ?? []).forEach((r) => {
+        const k = r.stage_name ?? "—";
+        stageCounts.set(k, (stageCounts.get(k) ?? 0) + 1);
+      });
+      const orderedStages: { id?: string; name: string; position?: number }[] =
+        (masterPipeline.data?.stages as { id?: string; name: string; position?: number }[]) ?? [];
+      const stageBreakdown = orderedStages.length
+        ? orderedStages
+            .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+            .map((s) => ({ name: s.name, count: stageCounts.get(s.name) ?? 0 }))
+        : Array.from(stageCounts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, count]) => ({ name, count }));
       return {
         totalLeads: leads.count ?? 0,
         lastSync: lastSync.data,
+        pipeline: masterPipeline.data,
+        stageBreakdown,
       };
     },
     staleTime: 15_000,
