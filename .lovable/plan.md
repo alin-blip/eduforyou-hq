@@ -1,92 +1,100 @@
 
 
-# Plan: Sync complet din pipeline-ul "Leads (Master Pipeline)" GHL
-
-## Ce e greșit acum
-
-Edge function-ul `ghl-sync-leads` actual:
-- Trage **doar 200 contacte** (2 pagini × 100), nu toate cele 12.133 oportunități.
-- Trage **doar 100 oportunități** fără filtru de pipeline → poate fi orice pipeline, nu "Leads (Master Pipeline)".
-- E centrat pe **contacte → upsert ghl_leads**, nu pe **oportunități** (care sunt entitatea cheie în GHL pentru fluxul tău Necontactat → Înscris).
-- N-are paginare reală pe oportunități, n-are filtru pe pipeline-ul Master, n-are progress/log per batch.
-
-Tu ai nevoie de **fiecare oportunitate** din pipeline-ul Master, cu stage-ul curent (Necontactat / Nu Răspunde x1/x2 / În Discuții / Consent Form / Înscris etc.), ca să poți construi scoreboard-uri reale (Cristi, Andrei, Florentina, Petea).
+# Plan: Notes din GHL + categorii pe useri (RO/EN)
 
 ## Ce construim
 
-### 1. Refactor edge function `ghl-sync-leads`
-- **Identifică automat pipeline-ul Master** după nume (case-insensitive match pentru "Leads" + "Master Pipeline"; fallback: cel mai mare după număr de oportunități). Configurabil via secret `GHL_MASTER_PIPELINE_ID` dacă userul vrea să-l fixeze.
-- **Paginare reală pe `/opportunities/search`** cu `pipeline_id={master}` și `limit=100`, urmărind `meta.nextPageUrl` sau `startAfter`/`startAfterId` (cursor GHL v2). Loop până când API-ul nu mai întoarce rezultate sau atingem un cap de siguranță (15.000).
-- **Batch upsert în chunks de 500** ca să nu lovim limite Postgres / payload size.
-- **Pull contact details on-demand**: pentru fiecare oportunitate, folosim `contactId` și îmbogățim cu nume/email/telefon din `/contacts/{id}` doar dacă lipsesc din opportunity payload (cache map ca să nu cerem același contact de 2 ori).
-- **Returnează progres**: `{ pipeline_name, pipeline_id, total_opportunities, upserted, pages_fetched, duration_ms }`.
+### 1. Sync notes din GHL în `ghl_leads`
+GHL API expune notes pe contact: `GET /contacts/{contactId}/notes`. Le trag în același edge function `ghl-sync-leads`, le stochez ca array JSON în coloană nouă `notes` pe `ghl_leads`. Fiecare notă: `{ id, body, createdAt, userId }`.
 
-### 2. Schema `ghl_leads` — clarificare semantică
-Tabelul rămâne, dar **fiecare rând = 1 oportunitate** din Master Pipeline (nu 1 contact). Cheia unică devine `ghl_opportunity_id` (cu fallback pe `ghl_contact_id` pentru contacte fără opportunity, dacă mai apar). Migrare: drop unique pe `ghl_contact_id`, add unique pe `ghl_opportunity_id`, păstrăm ambele coloane.
+**Optimizare**: 12k leads × 1 call notes = 12k calls suplimentare → prea încet pentru 150s timeout. Soluție: trag notes **doar pentru leads din stage-uri "moarte"** (Refuz, Picat, etc.) unde consultantul a scris motivul — alea sunt ~2000-3000 leads, ~30-40s extra. Pentru restul, notes rămân goale (oricum nu e relevant până nu e descalificat).
 
-### 3. Tabel nou `ghl_pipelines` (cache stages)
-Mic tabel (id, name, stages jsonb, synced_at) ca să afișăm stages-urile pipeline-ului în UI fără să refacem call la GHL la fiecare load. Populat în același sync.
+Adaug coloana în `ghl_leads`:
+```sql
+ALTER TABLE ghl_leads ADD COLUMN notes jsonb DEFAULT '[]'::jsonb;
+ALTER TABLE ghl_leads ADD COLUMN notes_count integer DEFAULT 0;
+ALTER TABLE ghl_leads ADD COLUMN last_note_body text;
+ALTER TABLE ghl_leads ADD COLUMN last_note_at timestamptz;
+```
 
-### 4. UI `/integrations` — afișare pipeline detectat
-Pe cardul GHL adăugăm:
-- Nume pipeline detectat ("Leads (Master Pipeline)") + total oportunități.
-- Distribuție pe stage-uri (mini bar chart sau listă: Necontactat 25, Nu Răspunde x1 338, ... Înscris X).
-- Status sync mai detaliat (ultimul: 12.133 opps în 4.2s, 23 pagini).
+### 2. Mapare useri GHL → categorii RO/EN
+Creez tabel mic `ghl_users` cu mapping manual:
+```sql
+CREATE TABLE ghl_users (
+  ghl_user_id text PRIMARY KEY,
+  display_name text NOT NULL,
+  language text NOT NULL CHECK (language IN ('ro','en','other')),
+  is_active boolean DEFAULT true
+);
+```
 
-### 5. Cron (opțional, recomandat)
-Programăm `pg_cron` să ruleze sync-ul la fiecare 30 min, cu lock ca să nu se suprapună două run-uri.
+Seed inițial bazat pe datele reale din DB:
+- `dA3aj2FKfVcDfkN1025N` → "Cristian" / `ro` / active (8728 leads)
+- `m1zfsJ02lY1y5PpbKiiE` → "EN Consultant 1" / `en` / active (1605)
+- `bPhmWA2a0Oo5cVr3i8sC` → "EN Consultant 2" / `en` / active (519)
+
+Numele exacte le poți edita în UI (vezi punctul 4). Curând rămâne doar 1 user EN — îi marchezi pe ceilalți `is_active=false` și ai un singur bucket "EN" în UI.
+
+### 3. UI `/ops` — filtru pe limbă + nume reale
+Înlocuiesc dropdown-ul actual de assignee (cu UUID-uri brute) cu:
+- **Tabs sus**: `Toți / 🇷🇴 Română (Cristian) / 🇬🇧 Engleză / Nealocați`
+- Sub tabs, opțional: dropdown cu numele reale ale consultanților (din `ghl_users`).
+- Coloanele de stage rămân la fel, dar arată numele ("Cristian") în loc de ID-ul brut.
+
+### 4. Detail drawer pe lead — afișează notes
+Click pe orice lead în `/ops` → deschide un Sheet/Drawer cu:
+- Datele de contact (nume, email, telefon, source, stage, aging).
+- **Secțiunea "Notes consultant"**: lista de notițe cu autor (din map `ghl_users`) + dată + body. Pentru leads descalificate (Refuz/Picat) asta e cheia — vezi de ce a picat.
+- Buton "Open in GHL" cu link direct: `https://app.gohighlevel.com/v2/location/{locationId}/contacts/detail/{contactId}`.
+
+### 5. Pagina `/teams/ghl-users` (mini admin)
+Tabel simplu unde CEO/Manager poate:
+- Vedea toți userii GHL detectați (din `ghl_leads.assigned_to` distinct).
+- Edita display_name, language (ro/en/other), is_active.
+- Auto-discover useri noi când apar în sync.
 
 ## Detalii tehnice
 
-**Filtrare pipeline în GHL API v2:**
-```
-GET /opportunities/search?location_id={loc}&pipeline_id={master}&limit=100
-```
-Răspuns conține `meta.startAfter` + `meta.startAfterId` pentru cursor. Iterăm până când `opportunities.length === 0`.
-
-**Upsert chunked:**
+**Edge function `ghl-sync-leads`** primește un pas nou după upsert leads:
 ```ts
-for (let i = 0; i < rows.length; i += 500) {
-  await admin.from("ghl_leads").upsert(rows.slice(i, i+500), { onConflict: "ghl_opportunity_id" });
+// Pull notes pentru leads din stages "moarte" (descalificate)
+const deadStages = ["🛑 Refuz","👎Prezent Picat","❌ File in Process Picat",...];
+const deadLeads = rows.filter(r => deadStages.includes(r.stage_name));
+const contactNotes = new Map<string, any[]>();
+for (const lead of deadLeads) {
+  if (contactNotes.has(lead.ghl_contact_id)) continue;
+  const data = await ghlFetch(`/contacts/${lead.ghl_contact_id}/notes`, GHL_API_KEY);
+  contactNotes.set(lead.ghl_contact_id, data?.notes ?? []);
 }
+// Update batch ghl_leads.notes pentru cele din deadLeads
 ```
 
-**Migrare SQL:**
-```sql
-ALTER TABLE ghl_leads DROP CONSTRAINT IF EXISTS ghl_leads_ghl_contact_id_key;
-ALTER TABLE ghl_leads ADD CONSTRAINT ghl_leads_opportunity_unique UNIQUE (ghl_opportunity_id);
-CREATE INDEX IF NOT EXISTS idx_ghl_leads_stage ON ghl_leads(stage_name);
-CREATE INDEX IF NOT EXISTS idx_ghl_leads_pipeline ON ghl_leads(pipeline_id);
+**Auto-discover useri noi**: după sync, INSERT în `ghl_users` pentru orice `assigned_to` care nu există încă (cu `display_name = ghl_user_id`, `language = 'other'`, `is_active = true`) — apare în UI ca "needs review".
 
-CREATE TABLE ghl_pipelines (
-  id text PRIMARY KEY,
-  name text NOT NULL,
-  is_master boolean DEFAULT false,
-  stages jsonb NOT NULL DEFAULT '[]',
-  synced_at timestamptz DEFAULT now()
-);
-ALTER TABLE ghl_pipelines ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Managers read pipelines" ON ghl_pipelines FOR SELECT
-  USING (has_any_role(auth.uid(), ARRAY['ceo','executive','manager']::app_role[]));
-```
-
-**Timeout:** edge functions Supabase au 150s wall time. 12k oportunități / 100 per page = 121 pagini × ~150ms latență GHL ≈ 18s. Confortabil.
-
-## Ce NU includ în acest plan (separate)
-
-Audit-ul tău cere ulterior: `students`, `applications`, `sfe_cases`, `daily_reports`, `sla_engine`, scoreboard-uri per rol (Petea/Dalina/Cristi/Andrei/Florentina), commission tracking, webhooks GHL real-time. **Astea sunt 6-8 task-uri mari separate** — după ce avem datele reale din Master Pipeline în `ghl_leads`, atacăm pe rând. Recomand să începem cu **scoreboard Petea** (queue per stage + aging) imediat după ce sync-ul merge, fiindcă deblochează vizibilitate operațională imediată.
+**Hook nou `useGhlUsers`**: query React la `ghl_users` + lookup map `userId → {display_name, language}` folosit peste tot în UI (Ops, drawer, etc.).
 
 ## Fișiere modificate
 
-- `supabase/functions/ghl-sync-leads/index.ts` — rescriere pe oportunități + paginare cursor + chunk upsert
-- `supabase/migrations/<new>.sql` — unique pe opportunity_id + tabel pipelines
-- `src/pages/Integrations.tsx` — afișare pipeline + distribuție stages
-- `src/hooks/useIntegrations.ts` — query nou pentru pipeline stats
+- `supabase/migrations/<new>.sql` — coloane notes pe ghl_leads + tabel ghl_users + RLS + seed cu cei 3 useri
+- `supabase/functions/ghl-sync-leads/index.ts` — pull notes pentru dead stages + auto-register useri noi
+- `src/hooks/useOpsLeads.ts` — adaug `notes`, `last_note_body`, `last_note_at` în SELECT
+- `src/hooks/useGhlUsers.ts` (nou) — query useri + map id→nume/limbă
+- `src/pages/Ops.tsx` — tabs RO/EN/Nealocați + nume reale + click pe lead deschide drawer
+- `src/components/ops/LeadDetailDrawer.tsx` (nou) — notes timeline + buton GHL
+- `src/pages/GhlUsers.tsx` (nou) — admin pentru mapping useri → limbă
+- `src/components/layout/AppSidebar.tsx` + `src/App.tsx` — link nou "GHL Users" sub Settings
 
-## Pași după aprobare
+## Pași execuție
 
-1. Migrare DB (unique key + tabel pipelines).
-2. Rescriu edge function cu paginare completă și filtru Master Pipeline.
-3. Update UI cu detalii pipeline + breakdown stages.
-4. Apeși "Sincronizează" → ar trebui să vezi 12.133 oportunități în câteva secunde.
+1. **Migrare DB**: notes pe ghl_leads + tabel ghl_users + seed cu cei 3 useri pe care-i știm.
+2. **Update edge function**: pull notes pentru leads descalificate + auto-register useri.
+3. **Resync**: apeși "Sincronizează" → vine cu notes pentru ~2-3k leads descalificate.
+4. **UI Ops**: tabs RO/EN, nume reale, drawer cu notes.
+5. **UI admin GHL Users**: editezi numele reale (Cristian + numele consultanților EN).
+
+## Ce nu includ (separate)
+
+- Sync notes pentru **toate** leads (nu doar dead) — doar dacă vrei explicit; ar lungi sync-ul la ~3 min și ar trebui mutat pe job background.
+- Real-time webhook din GHL pentru notes noi (acum sync e doar manual / cron).
+- Analiză AI pe notes ("top 5 motive de refuz luna asta") — fezabil ulterior cu Lovable AI.
 
