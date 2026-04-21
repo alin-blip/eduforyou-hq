@@ -61,7 +61,7 @@ function getInitials(name: string | null, email: string | null) {
 }
 
 function topRole(roles: AppRole[]): AppRole {
-  const order: AppRole[] = ["ceo", "executive", "manager", "member"];
+  const order: AppRole[] = ["ceo", "executive", "manager", "agent_manager", "member"];
   for (const r of order) if (roles.includes(r)) return r;
   return "member";
 }
