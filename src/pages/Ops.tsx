@@ -56,7 +56,10 @@ export default function OpsPage() {
 
   const assigneeOptions = useMemo(() => {
     const set = new Set<string>();
-    (leads ?? []).forEach((l) => set.add(l.assigned_to ?? "unassigned"));
+    (leads ?? []).forEach((l) => {
+      const v = (l.assigned_to ?? "").trim();
+      set.add(v ? v : "unassigned");
+    });
     return Array.from(set).sort();
   }, [leads]);
 
