@@ -142,8 +142,10 @@ export default function IntegrationsPage() {
     try {
       const { data, error } = await supabase.functions.invoke("ghl-sync-leads");
       if (error) throw error;
+      const total = data?.total_opportunities ?? 0;
+      const dur = data?.duration_ms ? `${(data.duration_ms / 1000).toFixed(1)}s` : "";
       toast.success(
-        `GHL sincronizat: ${data?.contacts ?? 0} contacte, ${data?.opportunities ?? 0} oportunități.`
+        `${data?.pipeline_name ?? "GHL"}: ${total} oportunități sincronizate${dur ? ` în ${dur}` : ""}.`,
       );
       queryClient.invalidateQueries({ queryKey: ["ghl-stats"] });
     } catch (e) {
