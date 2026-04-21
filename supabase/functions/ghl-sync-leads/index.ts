@@ -10,6 +10,14 @@ const GHL_API_VERSION = "2021-07-28";
 const MAX_OPPORTUNITIES = 20000;
 const PAGE_SIZE = 100;
 const UPSERT_CHUNK = 500;
+const NOTES_CONCURRENCY = 6;
+const DEAD_STAGES = new Set([
+  "🛑 Refuz",
+  "👎Prezent Picat",
+  "❌ Aplicant Direct",
+  "❌ File in Process Picat",
+  "🚀 Finantare Aprobata",
+]);
 
 type GhlOpportunity = {
   id: string;
@@ -218,6 +226,84 @@ Deno.serve(async (req) => {
       upserted += count ?? slice.length;
     }
 
+    // 4.5) Pull notes for leads in DEAD stages (consultanții scriu motivul de descalificare)
+    const deadLeads = rows.filter((r) => r.stage_name && DEAD_STAGES.has(r.stage_name));
+    const seenContacts = new Set<string>();
+    const deadUnique: typeof deadLeads = [];
+    for (const l of deadLeads) {
+      if (!l.ghl_contact_id || seenContacts.has(l.ghl_contact_id)) continue;
+      if (l.ghl_contact_id.startsWith("opp:")) continue;
+      seenContacts.add(l.ghl_contact_id);
+      deadUnique.push(l);
+    }
+
+    let notesFetched = 0;
+    let notesUpdated = 0;
+    const notesByContact = new Map<string, { id?: string; body?: string; createdAt?: string; userId?: string }[]>();
+
+    for (let i = 0; i < deadUnique.length; i += NOTES_CONCURRENCY) {
+      const batch = deadUnique.slice(i, i + NOTES_CONCURRENCY);
+      const results = await Promise.allSettled(
+        batch.map((l) =>
+          ghlFetch(`/contacts/${l.ghl_contact_id}/notes`, GHL_API_KEY!, {
+            locationId: GHL_LOCATION_ID!,
+          }),
+        ),
+      );
+      results.forEach((r, idx) => {
+        const lead = batch[idx];
+        if (r.status === "fulfilled") {
+          const arr = (r.value?.notes ?? []).map((n: Record<string, unknown>) => ({
+            id: n.id as string | undefined,
+            body: n.body as string | undefined,
+            createdAt: (n.dateAdded ?? n.createdAt) as string | undefined,
+            userId: n.userId as string | undefined,
+          }));
+          notesByContact.set(lead.ghl_contact_id, arr);
+          notesFetched += 1;
+        }
+      });
+    }
+
+    // Update notes per lead (chunked update is awkward — do per-row but only for affected)
+    for (const lead of deadUnique) {
+      const arr = notesByContact.get(lead.ghl_contact_id) ?? [];
+      const last = arr.reduce<{ body?: string; createdAt?: string } | null>((acc, n) => {
+        const t = n.createdAt ? new Date(n.createdAt).getTime() : 0;
+        const at = acc?.createdAt ? new Date(acc.createdAt).getTime() : -1;
+        return t > at ? n : acc;
+      }, null);
+      const { error: nErr } = await admin
+        .from("ghl_leads")
+        .update({
+          notes: arr,
+          notes_count: arr.length,
+          last_note_body: last?.body ?? null,
+          last_note_at: last?.createdAt ?? null,
+        })
+        .eq("ghl_opportunity_id", lead.ghl_opportunity_id);
+      if (!nErr) notesUpdated += 1;
+    }
+
+    // 4.6) Auto-discover GHL users (assigned_to) and register new ones in ghl_users
+    const distinctAssignees = new Set<string>();
+    rows.forEach((r) => {
+      if (r.assigned_to) distinctAssignees.add(r.assigned_to);
+    });
+    if (distinctAssignees.size > 0) {
+      const userRows = Array.from(distinctAssignees).map((id) => ({
+        ghl_user_id: id,
+        display_name: id,
+        language: "other",
+        is_active: true,
+      }));
+      // ignoreDuplicates so we don't overwrite manual edits
+      await admin.from("ghl_users").upsert(userRows, {
+        onConflict: "ghl_user_id",
+        ignoreDuplicates: true,
+      });
+    }
+
     // 5) Cache pipelines
     const pipelineRows = pipelines.map((p) => ({
       id: p.id,
@@ -253,6 +339,10 @@ Deno.serve(async (req) => {
         upserted,
         pages_fetched: pagesFetched,
         pipelines: pipelines.length,
+        dead_leads: deadUnique.length,
+        notes_fetched: notesFetched,
+        notes_updated: notesUpdated,
+        new_users_detected: distinctAssignees.size,
         duration_ms: duration,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },

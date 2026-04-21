@@ -1,9 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type GhlNote = {
+  id?: string;
+  body?: string;
+  createdAt?: string;
+  userId?: string;
+};
+
 export type OpsLead = {
   id: string;
   ghl_opportunity_id: string;
+  ghl_contact_id: string;
   full_name: string | null;
   email: string | null;
   phone: string | null;
@@ -14,10 +22,13 @@ export type OpsLead = {
   ghl_updated_at: string | null;
   ghl_created_at: string | null;
   synced_at: string;
+  notes: GhlNote[] | null;
+  notes_count: number | null;
+  last_note_body: string | null;
+  last_note_at: string | null;
+  source: string | null;
 };
 
-// SLA per stage (în ore). Dacă timpul de când e în stage > prag => breach.
-// Folosim ghl_updated_at ca proxy pt "ultima mișcare în stage".
 export const STAGE_SLA_HOURS: Record<string, number> = {
   "😐 Necontactat": 1,
   "❗De Contactat": 4,
@@ -26,7 +37,7 @@ export const STAGE_SLA_HOURS: Record<string, number> = {
   "💬 In Discutii": 72,
   "📨 Consent Form Trimis": 48,
   "✅ Consent Form Semnat": 24,
-  "🗓️ Programat la Test": 168, // 7 zile
+  "🗓️ Programat la Test": 168,
   "♻️ Reprogramat Absent": 48,
   "❌ Absent Test": 24,
   "❌ Absent x 2": 48,
@@ -35,7 +46,6 @@ export const STAGE_SLA_HOURS: Record<string, number> = {
   "👩🏻 Florentina": 48,
 };
 
-// Stage-uri "moarte" — nu intră în queue activ
 export const DEAD_STAGES = new Set([
   "🛑 Refuz",
   "👎Prezent Picat",
@@ -48,7 +58,6 @@ export function useOpsLeads() {
   return useQuery({
     queryKey: ["ops-leads"],
     queryFn: async () => {
-      // Postgres limit per request = 1000. Paginăm până luăm tot.
       const all: OpsLead[] = [];
       const PAGE = 1000;
       let from = 0;
@@ -56,16 +65,16 @@ export function useOpsLeads() {
         const { data, error } = await supabase
           .from("ghl_leads")
           .select(
-            "id, ghl_opportunity_id, full_name, email, phone, stage_name, status, assigned_to, pipeline_name, ghl_updated_at, ghl_created_at, synced_at",
+            "id, ghl_opportunity_id, ghl_contact_id, full_name, email, phone, stage_name, status, assigned_to, pipeline_name, ghl_updated_at, ghl_created_at, synced_at, source, notes, notes_count, last_note_body, last_note_at",
           )
           .order("ghl_updated_at", { ascending: false, nullsFirst: false })
           .range(from, from + PAGE - 1);
         if (error) throw error;
-        const batch = (data ?? []) as OpsLead[];
+        const batch = (data ?? []) as unknown as OpsLead[];
         all.push(...batch);
         if (batch.length < PAGE) break;
         from += PAGE;
-        if (from > 25000) break; // safety
+        if (from > 25000) break;
       }
       return all;
     },
