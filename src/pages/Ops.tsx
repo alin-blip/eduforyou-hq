@@ -200,7 +200,7 @@ function KpiTile({
           <p
             className={cn(
               "mt-1 font-display text-3xl font-semibold tabular-nums",
-              tone === "warning" && "text-amber-500",
+              tone === "warning" && "text-warning",
               tone === "danger" && "text-destructive",
             )}
           >
@@ -210,7 +210,7 @@ function KpiTile({
         <div
           className={cn(
             "flex h-10 w-10 items-center justify-center rounded-full bg-muted",
-            tone === "warning" && "bg-amber-500/10 text-amber-500",
+            tone === "warning" && "bg-warning/10 text-warning",
             tone === "danger" && "bg-destructive/10 text-destructive",
           )}
         >
