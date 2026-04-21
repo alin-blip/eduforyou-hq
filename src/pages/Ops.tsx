@@ -167,6 +167,8 @@ export default function OpsPage() {
         />
       </div>
 
+      <OpsAiInsights />
+
       <Tabs value={lang} onValueChange={(v) => { setLang(v as LangFilter); setAssignee("all"); }}>
         <TabsList>
           <TabsTrigger value="all">Toți</TabsTrigger>
