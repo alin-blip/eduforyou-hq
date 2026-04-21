@@ -1983,6 +1983,7 @@ export type Database = {
         Args: { _target_month?: string }
         Returns: Json
       }
+      cron_ghl_sync_leads: { Args: never; Returns: Json }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
