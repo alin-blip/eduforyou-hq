@@ -275,10 +275,18 @@ export default function IntegrationsPage() {
                   <p className="text-[11px] text-muted-foreground italic">{def.setupHint}</p>
 
                   {connected && def.key === "ghl" && ghlStats && (
-                    <div className="rounded-md border border-border/60 bg-muted/30 p-2.5 text-xs space-y-1">
+                    <div className="rounded-md border border-border/60 bg-muted/30 p-2.5 text-xs space-y-2">
+                      {ghlStats.pipeline && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Pipeline:</span>
+                          <span className="font-semibold truncate max-w-[60%]" title={ghlStats.pipeline.name}>
+                            {ghlStats.pipeline.name}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Leads sincronizate:</span>
-                        <span className="font-semibold">{ghlStats.totalLeads}</span>
+                        <span className="text-muted-foreground">Oportunități:</span>
+                        <span className="font-semibold">{ghlStats.totalLeads.toLocaleString("ro-RO")}</span>
                       </div>
                       {ghlStats.lastSync && (
                         <div className="flex items-center justify-between">
@@ -288,7 +296,38 @@ export default function IntegrationsPage() {
                               addSuffix: true,
                               locale: ro,
                             })}
+                            {ghlStats.lastSync.duration_ms
+                              ? ` · ${(ghlStats.lastSync.duration_ms / 1000).toFixed(1)}s`
+                              : ""}
                           </span>
+                        </div>
+                      )}
+                      {ghlStats.stageBreakdown.length > 0 && (
+                        <div className="pt-2 border-t border-border/50 space-y-1">
+                          <p className="font-medium text-foreground/90 mb-1">Distribuție pe stages</p>
+                          <div className="space-y-0.5 max-h-44 overflow-y-auto pr-1">
+                            {ghlStats.stageBreakdown.map((s) => {
+                              const pct = ghlStats.totalLeads > 0
+                                ? Math.round((s.count / ghlStats.totalLeads) * 100)
+                                : 0;
+                              return (
+                                <div key={s.name} className="flex items-center gap-2">
+                                  <span className="flex-1 truncate text-foreground/80" title={s.name}>
+                                    {s.name}
+                                  </span>
+                                  <div className="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
+                                    <div
+                                      className="h-full bg-gradient-to-r from-emerald-500 to-teal-500"
+                                      style={{ width: `${pct}%` }}
+                                    />
+                                  </div>
+                                  <span className="tabular-nums font-medium w-10 text-right">
+                                    {s.count.toLocaleString("ro-RO")}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
                     </div>
