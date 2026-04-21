@@ -247,16 +247,42 @@ export default function IntegrationsPage() {
 
                   <p className="text-[11px] text-muted-foreground italic">{def.setupHint}</p>
 
+                  {connected && def.key === "ghl" && ghlStats && (
+                    <div className="rounded-md border border-border/60 bg-muted/30 p-2.5 text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Leads sincronizate:</span>
+                        <span className="font-semibold">{ghlStats.totalLeads}</span>
+                      </div>
+                      {ghlStats.lastSync && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Ultimul sync:</span>
+                          <span className={ghlStats.lastSync.success ? "text-success" : "text-destructive"}>
+                            {formatDistanceToNow(new Date(ghlStats.lastSync.created_at), {
+                              addSuffix: true,
+                              locale: ro,
+                            })}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex gap-2 mt-auto pt-2">
                     {connected ? (
                       <Button
                         size="sm"
                         variant="outline"
                         className="flex-1"
-                        disabled
-                        title="Sync va veni în următoarea iterație"
+                        disabled={!isManager || syncing === def.key || def.key !== "ghl"}
+                        onClick={() => handleSync(def.key)}
+                        title={def.key === "ghl" ? "Sincronizează acum" : "Sync va veni în următoarea iterație"}
                       >
-                        <RefreshCw className="h-3.5 w-3.5 mr-2" /> Sync (în curând)
+                        <RefreshCw className={`h-3.5 w-3.5 mr-2 ${syncing === def.key ? "animate-spin" : ""}`} />
+                        {def.key === "ghl"
+                          ? syncing === def.key
+                            ? "Sincronizez…"
+                            : "Sincronizează"
+                          : "Sync (în curând)"}
                       </Button>
                     ) : (
                       <Button
