@@ -155,7 +155,8 @@ Deno.serve(async (req) => {
     const rows = contacts.map((c) => {
       const opp = oppByContact.get(c.id);
       const stageInfo = opp ? stageMap.get(opp.pipelineStageId) : undefined;
-      const fullName = c.contactName ?? [c.firstName, c.lastName].filter(Boolean).join(" ").trim() || null;
+      const joined = [c.firstName, c.lastName].filter(Boolean).join(" ").trim();
+      const fullName = c.contactName ?? (joined.length > 0 ? joined : null);
       return {
         ghl_contact_id: c.id,
         ghl_opportunity_id: opp?.id ?? null,
