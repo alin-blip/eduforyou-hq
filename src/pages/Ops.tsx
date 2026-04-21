@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle, Flame, RefreshCw, Search, Users2 } from "lucide-react";
+import { AlertTriangle, Flame, MessageSquare, RefreshCw, Search, Users2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,8 @@ import {
   useOpsLeads,
   type OpsLead,
 } from "@/hooks/useOpsLeads";
+import { useGhlUsers } from "@/hooks/useGhlUsers";
+import { LeadDetailDrawer } from "@/components/ops/LeadDetailDrawer";
 
 function fmtAging(hours: number): string {
   if (hours < 1) return `${Math.round(hours * 60)}m`;
@@ -30,18 +32,32 @@ function fmtAging(hours: number): string {
   return `${Math.round(hours / 24)}d`;
 }
 
+type LangFilter = "all" | "ro" | "en" | "unassigned";
+
 export default function OpsPage() {
   const { data: leads, isLoading, refetch, isFetching } = useOpsLeads();
+  const { map: usersMap, data: ghlUsers } = useGhlUsers();
   const [search, setSearch] = useState("");
+  const [lang, setLang] = useState<LangFilter>("all");
   const [assignee, setAssignee] = useState<string>("all");
   const [showOnly, setShowOnly] = useState<"active" | "breach" | "all">("active");
+  const [selected, setSelected] = useState<OpsLead | null>(null);
 
   const filtered = useMemo(() => {
     if (!leads) return [];
     const s = search.trim().toLowerCase();
     return leads.filter((l) => {
-      const a = (l.assigned_to ?? "").trim() || "unassigned";
-      if (assignee !== "all" && a !== assignee) return false;
+      const a = (l.assigned_to ?? "").trim();
+      const user = a ? usersMap.get(a) : undefined;
+
+      if (lang === "unassigned" && a) return false;
+      if (lang === "ro" && user?.language !== "ro") return false;
+      if (lang === "en" && user?.language !== "en") return false;
+
+      if (assignee !== "all") {
+        const key = a || "unassigned";
+        if (key !== assignee) return false;
+      }
       if (showOnly === "active" && l.stage_name && DEAD_STAGES.has(l.stage_name)) return false;
       if (showOnly === "breach") {
         const h = hoursSince(l.ghl_updated_at);
@@ -53,16 +69,30 @@ export default function OpsPage() {
       }
       return true;
     });
-  }, [leads, search, assignee, showOnly]);
+  }, [leads, usersMap, search, lang, assignee, showOnly]);
 
   const assigneeOptions = useMemo(() => {
-    const set = new Set<string>();
+    const seen = new Set<string>();
     (leads ?? []).forEach((l) => {
       const v = (l.assigned_to ?? "").trim();
-      set.add(v ? v : "unassigned");
+      seen.add(v ? v : "unassigned");
     });
-    return Array.from(set).sort();
-  }, [leads]);
+    // Filter by lang too so dropdown shrinks
+    return Array.from(seen)
+      .filter((id) => {
+        if (id === "unassigned") return lang === "all" || lang === "unassigned";
+        const u = usersMap.get(id);
+        if (lang === "ro") return u?.language === "ro";
+        if (lang === "en") return u?.language === "en";
+        if (lang === "unassigned") return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const na = usersMap.get(a)?.display_name ?? a;
+        const nb = usersMap.get(b)?.display_name ?? b;
+        return na.localeCompare(nb);
+      });
+  }, [leads, usersMap, lang]);
 
   const byStage = useMemo(() => {
     const map = new Map<string, OpsLead[]>();
@@ -71,7 +101,6 @@ export default function OpsPage() {
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(l);
     });
-    // Sort stages: active SLA-tracked first (by SLA asc), then others, dead last
     return Array.from(map.entries()).sort((a, b) => {
       const aDead = DEAD_STAGES.has(a[0]) ? 1 : 0;
       const bDead = DEAD_STAGES.has(b[0]) ? 1 : 0;
@@ -85,7 +114,7 @@ export default function OpsPage() {
   const totals = useMemo(() => {
     let active = 0;
     let breach = 0;
-    let urgent = 0; // breach pe stage cu SLA <= 4h
+    let urgent = 0;
     filtered.forEach((l) => {
       if (l.stage_name && DEAD_STAGES.has(l.stage_name)) return;
       active += 1;
@@ -99,6 +128,11 @@ export default function OpsPage() {
     return { active, breach, urgent };
   }, [filtered]);
 
+  // Try to grab GHL location id from any user (set in env at edge fn). For drawer link only.
+  const ghlLocationId = (ghlUsers && ghlUsers.length > 0
+    ? (import.meta.env.VITE_GHL_LOCATION_ID as string | undefined)
+    : undefined) ?? undefined;
+
   return (
     <div className="space-y-6 p-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -107,7 +141,7 @@ export default function OpsPage() {
             Ops Scoreboard — Petea
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Queue per stage din pipeline-ul Master, cu aging și SLA breach. Click pe un stage ca să vezi leads-urile.
+            Queue per stage din pipeline-ul Master, cu aging și SLA breach. Click pe un lead pentru detalii și notițe.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
@@ -132,6 +166,15 @@ export default function OpsPage() {
         />
       </div>
 
+      <Tabs value={lang} onValueChange={(v) => { setLang(v as LangFilter); setAssignee("all"); }}>
+        <TabsList>
+          <TabsTrigger value="all">Toți</TabsTrigger>
+          <TabsTrigger value="ro">🇷🇴 Română</TabsTrigger>
+          <TabsTrigger value="en">🇬🇧 Engleză</TabsTrigger>
+          <TabsTrigger value="unassigned">Nealocați</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       <Card>
         <CardContent className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-1 items-center gap-2">
@@ -145,16 +188,20 @@ export default function OpsPage() {
           </div>
           <div className="flex items-center gap-2">
             <Select value={assignee} onValueChange={setAssignee}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Assignee" />
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Consultant" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Toți assignees</SelectItem>
-                {assigneeOptions.map((a) => (
-                  <SelectItem key={a} value={a}>
-                    {a === "unassigned" ? "— Nealocat —" : a}
-                  </SelectItem>
-                ))}
+                <SelectItem value="all">Toți consultanții</SelectItem>
+                {assigneeOptions.map((id) => {
+                  const u = usersMap.get(id);
+                  const name = id === "unassigned" ? "— Nealocat —" : u?.display_name ?? id;
+                  return (
+                    <SelectItem key={id} value={id}>
+                      {name}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             <Tabs value={showOnly} onValueChange={(v) => setShowOnly(v as typeof showOnly)}>
@@ -177,10 +224,23 @@ export default function OpsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {byStage.map(([stage, items]) => (
-            <StageColumn key={stage} stage={stage} items={items} />
+            <StageColumn
+              key={stage}
+              stage={stage}
+              items={items}
+              usersMap={usersMap}
+              onSelect={setSelected}
+            />
           ))}
         </div>
       )}
+
+      <LeadDetailDrawer
+        lead={selected}
+        open={!!selected}
+        onOpenChange={(o) => !o && setSelected(null)}
+        ghlLocationId={ghlLocationId}
+      />
     </div>
   );
 }
@@ -225,7 +285,17 @@ function KpiTile({
   );
 }
 
-function StageColumn({ stage, items }: { stage: string; items: OpsLead[] }) {
+function StageColumn({
+  stage,
+  items,
+  usersMap,
+  onSelect,
+}: {
+  stage: string;
+  items: OpsLead[];
+  usersMap: Map<string, { display_name: string }>;
+  onSelect: (l: OpsLead) => void;
+}) {
   const sla = STAGE_SLA_HOURS[stage];
   const isDead = DEAD_STAGES.has(stage);
   const breachCount = items.filter((l) => {
@@ -233,7 +303,6 @@ function StageColumn({ stage, items }: { stage: string; items: OpsLead[] }) {
     return isBreach(l.stage_name, h);
   }).length;
 
-  // Sort by oldest first (most stuck) within SLA-tracked stages
   const sorted = [...items].sort((a, b) => {
     const ta = a.ghl_updated_at ? new Date(a.ghl_updated_at).getTime() : 0;
     const tb = b.ghl_updated_at ? new Date(b.ghl_updated_at).getTime() : 0;
@@ -241,7 +310,7 @@ function StageColumn({ stage, items }: { stage: string; items: OpsLead[] }) {
   });
 
   return (
-    <Card className={cn(isDead && "opacity-60")}>
+    <Card className={cn(isDead && "opacity-70")}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
@@ -268,11 +337,16 @@ function StageColumn({ stage, items }: { stage: string; items: OpsLead[] }) {
             {sorted.slice(0, 50).map((l) => {
               const h = hoursSince(l.ghl_updated_at);
               const breach = isBreach(l.stage_name, h);
+              const assigneeName = l.assigned_to
+                ? usersMap.get(l.assigned_to)?.display_name ?? l.assigned_to
+                : "Nealocat";
+              const hasNotes = (l.notes_count ?? 0) > 0;
               return (
-                <div
+                <button
                   key={l.id}
+                  onClick={() => onSelect(l)}
                   className={cn(
-                    "flex items-center justify-between gap-2 px-4 py-2.5 text-sm transition-colors hover:bg-muted/40",
+                    "flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left text-sm transition-colors hover:bg-muted/40",
                     breach && "bg-destructive/5",
                   )}
                 >
@@ -281,7 +355,7 @@ function StageColumn({ stage, items }: { stage: string; items: OpsLead[] }) {
                       {l.full_name || l.email || l.phone || "—"}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
-                      {l.assigned_to ?? "Nealocat"} · {l.email || l.phone || "no contact"}
+                      {assigneeName} · {l.email || l.phone || "no contact"}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-0.5">
@@ -293,9 +367,17 @@ function StageColumn({ stage, items }: { stage: string; items: OpsLead[] }) {
                     >
                       {fmtAging(h)}
                     </span>
-                    {breach && <AlertTriangle className="h-3 w-3 text-destructive" />}
+                    <div className="flex items-center gap-1">
+                      {hasNotes && (
+                        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                          <MessageSquare className="h-3 w-3" />
+                          {l.notes_count}
+                        </span>
+                      )}
+                      {breach && <AlertTriangle className="h-3 w-3 text-destructive" />}
+                    </div>
                   </div>
-                </div>
+                </button>
               );
             })}
             {sorted.length > 50 && (

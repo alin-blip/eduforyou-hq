@@ -68,6 +68,7 @@ const navGroups = [
     label: "Data",
     items: [
       { title: "Integrations", url: "/integrations", icon: Plug },
+      { title: "GHL Users", url: "/ghl-users", icon: Users },
       { title: "Settings", url: "/settings", icon: Settings },
     ],
   },

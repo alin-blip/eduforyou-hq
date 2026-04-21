@@ -28,6 +28,7 @@ import ProjectsPage from "./pages/Projects.tsx";
 import IntegrationsPage from "./pages/Integrations.tsx";
 import ReportsPage from "./pages/Reports.tsx";
 import SettingsPage from "./pages/Settings.tsx";
+import GhlUsersPage from "./pages/GhlUsers.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -66,6 +67,7 @@ const App = () => (
                   <Route path="/integrations" element={<IntegrationsPage />} />
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/ghl-users" element={<GhlUsersPage />} />
                 </Route>
                   <Route path="*" element={<NotFound />} />
                 </Routes>
