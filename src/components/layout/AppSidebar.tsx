@@ -15,6 +15,7 @@ import {
   GitBranch,
   TrendingUp,
   ShieldCheck,
+  Activity,
 } from "lucide-react";
 
 import {
@@ -56,6 +57,7 @@ const navGroups = [
   {
     label: "Business",
     items: [
+      { title: "Ops Scoreboard", url: "/ops", icon: Activity },
       { title: "Sales Pipeline", url: "/sales", icon: TrendingUp },
       { title: "Virtual CFO", url: "/cfo", icon: Wallet },
       { title: "Project Hub", url: "/projects", icon: FolderKanban },
