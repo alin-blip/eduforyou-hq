@@ -467,6 +467,114 @@ export type Database = {
           },
         ]
       }
+      ghl_leads: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          currency: string | null
+          email: string | null
+          full_name: string | null
+          ghl_contact_id: string
+          ghl_created_at: string | null
+          ghl_opportunity_id: string | null
+          ghl_updated_at: string | null
+          id: string
+          monetary_value: number | null
+          phone: string | null
+          pipeline_id: string | null
+          pipeline_name: string | null
+          raw_payload: Json | null
+          source: string | null
+          stage_id: string | null
+          stage_name: string | null
+          status: string | null
+          synced_at: string
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          currency?: string | null
+          email?: string | null
+          full_name?: string | null
+          ghl_contact_id: string
+          ghl_created_at?: string | null
+          ghl_opportunity_id?: string | null
+          ghl_updated_at?: string | null
+          id?: string
+          monetary_value?: number | null
+          phone?: string | null
+          pipeline_id?: string | null
+          pipeline_name?: string | null
+          raw_payload?: Json | null
+          source?: string | null
+          stage_id?: string | null
+          stage_name?: string | null
+          status?: string | null
+          synced_at?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          currency?: string | null
+          email?: string | null
+          full_name?: string | null
+          ghl_contact_id?: string
+          ghl_created_at?: string | null
+          ghl_opportunity_id?: string | null
+          ghl_updated_at?: string | null
+          id?: string
+          monetary_value?: number | null
+          phone?: string | null
+          pipeline_id?: string | null
+          pipeline_name?: string | null
+          raw_payload?: Json | null
+          source?: string | null
+          stage_id?: string | null
+          stage_name?: string | null
+          status?: string | null
+          synced_at?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ghl_sync_log: {
+        Row: {
+          contacts_synced: number | null
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          opportunities_synced: number | null
+          success: boolean | null
+          triggered_by: string | null
+        }
+        Insert: {
+          contacts_synced?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          opportunities_synced?: number | null
+          success?: boolean | null
+          triggered_by?: string | null
+        }
+        Update: {
+          contacts_synced?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          opportunities_synced?: number | null
+          success?: boolean | null
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           amount: number
