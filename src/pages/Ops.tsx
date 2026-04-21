@@ -40,7 +40,8 @@ export default function OpsPage() {
     if (!leads) return [];
     const s = search.trim().toLowerCase();
     return leads.filter((l) => {
-      if (assignee !== "all" && (l.assigned_to ?? "unassigned") !== assignee) return false;
+      const a = (l.assigned_to ?? "").trim() || "unassigned";
+      if (assignee !== "all" && a !== assignee) return false;
       if (showOnly === "active" && l.stage_name && DEAD_STAGES.has(l.stage_name)) return false;
       if (showOnly === "breach") {
         const h = hoursSince(l.ghl_updated_at);
