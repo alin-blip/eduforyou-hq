@@ -317,7 +317,7 @@ export default function IntegrationsPage() {
                                   </span>
                                   <div className="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
                                     <div
-                                      className="h-full bg-gradient-to-r from-emerald-500 to-teal-500"
+                                      className="h-full bg-gradient-primary"
                                       style={{ width: `${pct}%` }}
                                     />
                                   </div>
