@@ -141,24 +141,38 @@ Deno.serve(async (req) => {
       stageMap.set(s.id, { name: s.name, position: s.position });
     }
 
-    // 2) Paginate opportunities for the master pipeline only
+    // 2) Paginate opportunities for the master pipeline only (cursor-based)
     const opportunities: GhlOpportunity[] = [];
-    let page = 1;
     let pagesFetched = 0;
+    let startAfter: string | null = null;
+    let startAfterId: string | null = null;
     while (opportunities.length < MAX_OPPORTUNITIES) {
       const params: Record<string, string> = {
         location_id: GHL_LOCATION_ID,
         pipeline_id: master.id,
         limit: String(PAGE_SIZE),
-        page: String(page),
       };
+      if (startAfter) params.startAfter = startAfter;
+      if (startAfterId) params.startAfterId = startAfterId;
+
       const data = await ghlFetch(`/opportunities/search`, GHL_API_KEY, params);
       const batch: GhlOpportunity[] = data?.opportunities ?? [];
       pagesFetched += 1;
       if (batch.length === 0) break;
       opportunities.push(...batch);
+
+      const meta = data?.meta ?? {};
+      const nextStartAfter =
+        meta.startAfter != null ? String(meta.startAfter) : null;
+      const nextStartAfterId = meta.startAfterId ?? null;
+
+      // Stop if no cursor or cursor didn't advance
+      if (!nextStartAfterId || nextStartAfterId === startAfterId) break;
       if (batch.length < PAGE_SIZE) break;
-      page += 1;
+
+      startAfter = nextStartAfter;
+      startAfterId = nextStartAfterId;
+
       // Safety: hard cap on pages too
       if (pagesFetched > 250) break;
     }
