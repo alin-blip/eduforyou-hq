@@ -22,6 +22,7 @@ import CiclesPage from "./pages/Cicles.tsx";
 import TasksPage from "./pages/Tasks.tsx";
 import CfoPage from "./pages/Cfo.tsx";
 import SalesPage from "./pages/Sales.tsx";
+import OpsPage from "./pages/Ops.tsx";
 import AccountabilityPage from "./pages/Accountability.tsx";
 import ProjectsPage from "./pages/Projects.tsx";
 import IntegrationsPage from "./pages/Integrations.tsx";
@@ -59,6 +60,7 @@ const App = () => (
                   <Route path="/cicles" element={<CiclesPage />} />
                   <Route path="/tasks" element={<TasksPage />} />
                   <Route path="/sales" element={<SalesPage />} />
+                  <Route path="/ops" element={<OpsPage />} />
                   <Route path="/cfo" element={<CfoPage />} />
                   <Route path="/projects" element={<ProjectsPage />} />
                   <Route path="/integrations" element={<IntegrationsPage />} />
