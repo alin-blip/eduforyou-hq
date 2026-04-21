@@ -14,6 +14,98 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_referrals: {
+        Row: {
+          agent_id: string
+          commission_amount: number | null
+          commission_paid: boolean
+          created_at: string
+          ghl_opportunity_id: string | null
+          id: string
+          notes: string | null
+          paid_date: string | null
+          status: string
+          student_name: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          commission_amount?: number | null
+          commission_paid?: boolean
+          created_at?: string
+          ghl_opportunity_id?: string | null
+          id?: string
+          notes?: string | null
+          paid_date?: string | null
+          status?: string
+          student_name: string
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          commission_amount?: number | null
+          commission_paid?: boolean
+          created_at?: string
+          ghl_opportunity_id?: string | null
+          id?: string
+          notes?: string | null
+          paid_date?: string | null
+          status?: string
+          student_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_referrals_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agents: {
+        Row: {
+          application_date: string | null
+          commission_pct: number | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          application_date?: string | null
+          commission_pct?: number | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          application_date?: string | null
+          commission_pct?: number | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_insights: {
         Row: {
           content: string
@@ -93,6 +185,68 @@ export type Database = {
           value?: number
         }
         Relationships: []
+      }
+      daily_reports: {
+        Row: {
+          applications_submitted: number
+          blockers: string | null
+          calls_made: number
+          created_at: string
+          documents_collected: number
+          id: string
+          leads_contacted: number
+          leads_qualified: number
+          locked: boolean
+          notes: string | null
+          report_date: string
+          students_enrolled: number
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          applications_submitted?: number
+          blockers?: string | null
+          calls_made?: number
+          created_at?: string
+          documents_collected?: number
+          id?: string
+          leads_contacted?: number
+          leads_qualified?: number
+          locked?: boolean
+          notes?: string | null
+          report_date?: string
+          students_enrolled?: number
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          applications_submitted?: number
+          blockers?: string | null
+          calls_made?: number
+          created_at?: string
+          documents_collected?: number
+          id?: string
+          leads_contacted?: number
+          leads_qualified?: number
+          locked?: boolean
+          notes?: string | null
+          report_date?: string
+          students_enrolled?: number
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_reports_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deals: {
         Row: {
@@ -470,6 +624,7 @@ export type Database = {
       ghl_leads: {
         Row: {
           assigned_to: string | null
+          course: string | null
           created_at: string
           currency: string | null
           email: string | null
@@ -479,6 +634,8 @@ export type Database = {
           ghl_opportunity_id: string
           ghl_updated_at: string | null
           id: string
+          internal_assigned_to: string | null
+          internal_notes: string | null
           last_note_at: string | null
           last_note_body: string | null
           monetary_value: number | null
@@ -494,10 +651,12 @@ export type Database = {
           status: string | null
           synced_at: string
           tags: string[] | null
+          university: string | null
           updated_at: string
         }
         Insert: {
           assigned_to?: string | null
+          course?: string | null
           created_at?: string
           currency?: string | null
           email?: string | null
@@ -507,6 +666,8 @@ export type Database = {
           ghl_opportunity_id: string
           ghl_updated_at?: string | null
           id?: string
+          internal_assigned_to?: string | null
+          internal_notes?: string | null
           last_note_at?: string | null
           last_note_body?: string | null
           monetary_value?: number | null
@@ -522,10 +683,12 @@ export type Database = {
           status?: string | null
           synced_at?: string
           tags?: string[] | null
+          university?: string | null
           updated_at?: string
         }
         Update: {
           assigned_to?: string | null
+          course?: string | null
           created_at?: string
           currency?: string | null
           email?: string | null
@@ -535,6 +698,8 @@ export type Database = {
           ghl_opportunity_id?: string
           ghl_updated_at?: string | null
           id?: string
+          internal_assigned_to?: string | null
+          internal_notes?: string | null
           last_note_at?: string | null
           last_note_body?: string | null
           monetary_value?: number | null
@@ -550,9 +715,18 @@ export type Database = {
           status?: string | null
           synced_at?: string
           tags?: string[] | null
+          university?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ghl_leads_internal_assigned_to_fkey"
+            columns: ["internal_assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ghl_pipelines: {
         Row: {
@@ -622,6 +796,7 @@ export type Database = {
           is_active: boolean
           language: string
           notes: string | null
+          profile_id: string | null
           updated_at: string
         }
         Insert: {
@@ -631,6 +806,7 @@ export type Database = {
           is_active?: boolean
           language?: string
           notes?: string | null
+          profile_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -640,9 +816,18 @@ export type Database = {
           is_active?: boolean
           language?: string
           notes?: string | null
+          profile_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ghl_users_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invoices: {
         Row: {
@@ -1483,6 +1668,68 @@ export type Database = {
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sla_events: {
+        Row: {
+          actual_completion_at: string | null
+          created_at: string
+          deadline_at: string | null
+          deadline_hours: number | null
+          from_stage: string | null
+          ghl_opportunity_id: string | null
+          hours_taken: number | null
+          id: string
+          lead_name: string | null
+          notes: string | null
+          responsible_ghl_user_id: string | null
+          responsible_user_id: string | null
+          sla_type: string
+          status: string
+          to_stage: string | null
+        }
+        Insert: {
+          actual_completion_at?: string | null
+          created_at?: string
+          deadline_at?: string | null
+          deadline_hours?: number | null
+          from_stage?: string | null
+          ghl_opportunity_id?: string | null
+          hours_taken?: number | null
+          id?: string
+          lead_name?: string | null
+          notes?: string | null
+          responsible_ghl_user_id?: string | null
+          responsible_user_id?: string | null
+          sla_type: string
+          status?: string
+          to_stage?: string | null
+        }
+        Update: {
+          actual_completion_at?: string | null
+          created_at?: string
+          deadline_at?: string | null
+          deadline_hours?: number | null
+          from_stage?: string | null
+          ghl_opportunity_id?: string | null
+          hours_taken?: number | null
+          id?: string
+          lead_name?: string | null
+          notes?: string | null
+          responsible_ghl_user_id?: string | null
+          responsible_user_id?: string | null
+          sla_type?: string
+          status?: string
+          to_stage?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sla_events_responsible_user_id_fkey"
+            columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
