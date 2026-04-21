@@ -476,7 +476,7 @@ export type Database = {
           full_name: string | null
           ghl_contact_id: string
           ghl_created_at: string | null
-          ghl_opportunity_id: string | null
+          ghl_opportunity_id: string
           ghl_updated_at: string | null
           id: string
           monetary_value: number | null
@@ -500,7 +500,7 @@ export type Database = {
           full_name?: string | null
           ghl_contact_id: string
           ghl_created_at?: string | null
-          ghl_opportunity_id?: string | null
+          ghl_opportunity_id: string
           ghl_updated_at?: string | null
           id?: string
           monetary_value?: number | null
@@ -524,7 +524,7 @@ export type Database = {
           full_name?: string | null
           ghl_contact_id?: string
           ghl_created_at?: string | null
-          ghl_opportunity_id?: string | null
+          ghl_opportunity_id?: string
           ghl_updated_at?: string | null
           id?: string
           monetary_value?: number | null
@@ -539,6 +539,33 @@ export type Database = {
           synced_at?: string
           tags?: string[] | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      ghl_pipelines: {
+        Row: {
+          id: string
+          is_master: boolean
+          name: string
+          stages: Json
+          synced_at: string
+          total_opportunities: number
+        }
+        Insert: {
+          id: string
+          is_master?: boolean
+          name: string
+          stages?: Json
+          synced_at?: string
+          total_opportunities?: number
+        }
+        Update: {
+          id?: string
+          is_master?: boolean
+          name?: string
+          stages?: Json
+          synced_at?: string
+          total_opportunities?: number
         }
         Relationships: []
       }
