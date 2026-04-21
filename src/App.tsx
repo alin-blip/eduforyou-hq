@@ -29,6 +29,12 @@ import IntegrationsPage from "./pages/Integrations.tsx";
 import ReportsPage from "./pages/Reports.tsx";
 import SettingsPage from "./pages/Settings.tsx";
 import GhlUsersPage from "./pages/GhlUsers.tsx";
+import DailyReportPage from "./pages/DailyReport.tsx";
+import WeeklyKpisPage from "./pages/WeeklyKpis.tsx";
+import SlaTrackerPage from "./pages/SlaTracker.tsx";
+import StudentPipelinePage from "./pages/StudentPipeline.tsx";
+import MonthlyDashboardPage from "./pages/MonthlyDashboard.tsx";
+import AgentsPage from "./pages/Agents.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -68,6 +74,12 @@ const App = () => (
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/ghl-users" element={<GhlUsersPage />} />
+                  <Route path="/daily-report" element={<DailyReportPage />} />
+                  <Route path="/weekly-kpis" element={<WeeklyKpisPage />} />
+                  <Route path="/sla-tracker" element={<SlaTrackerPage />} />
+                  <Route path="/pipeline" element={<StudentPipelinePage />} />
+                  <Route path="/monthly-dashboard" element={<MonthlyDashboardPage />} />
+                  <Route path="/agents" element={<AgentsPage />} />
                 </Route>
                   <Route path="*" element={<NotFound />} />
                 </Routes>
