@@ -23,7 +23,7 @@ import {
   useOpsLeads,
   type OpsLead,
 } from "@/hooks/useOpsLeads";
-import { useGhlUsers } from "@/hooks/useGhlUsers";
+import { useGhlUsers, displayNameFor, type GhlUser } from "@/hooks/useGhlUsers";
 import { LeadDetailDrawer } from "@/components/ops/LeadDetailDrawer";
 
 function fmtAging(hours: number): string {
@@ -88,8 +88,8 @@ export default function OpsPage() {
         return true;
       })
       .sort((a, b) => {
-        const na = usersMap.get(a)?.display_name ?? a;
-        const nb = usersMap.get(b)?.display_name ?? b;
+        const na = displayNameFor(usersMap.get(a)) ?? a;
+        const nb = displayNameFor(usersMap.get(b)) ?? b;
         return na.localeCompare(nb);
       });
   }, [leads, usersMap, lang]);
@@ -195,7 +195,7 @@ export default function OpsPage() {
                 <SelectItem value="all">Toți consultanții</SelectItem>
                 {assigneeOptions.map((id) => {
                   const u = usersMap.get(id);
-                  const name = id === "unassigned" ? "— Nealocat —" : u?.display_name ?? id;
+                  const name = id === "unassigned" ? "— Nealocat —" : displayNameFor(u) || id;
                   return (
                     <SelectItem key={id} value={id}>
                       {name}
@@ -293,7 +293,7 @@ function StageColumn({
 }: {
   stage: string;
   items: OpsLead[];
-  usersMap: Map<string, { display_name: string }>;
+  usersMap: Map<string, GhlUser>;
   onSelect: (l: OpsLead) => void;
 }) {
   const sla = STAGE_SLA_HOURS[stage];
@@ -338,7 +338,7 @@ function StageColumn({
               const h = hoursSince(l.ghl_updated_at);
               const breach = isBreach(l.stage_name, h);
               const assigneeName = l.assigned_to
-                ? usersMap.get(l.assigned_to)?.display_name ?? l.assigned_to
+                ? displayNameFor(usersMap.get(l.assigned_to)) || l.assigned_to
                 : "Nealocat";
               const hasNotes = (l.notes_count ?? 0) > 0;
               return (

@@ -16,7 +16,14 @@ import {
   TrendingUp,
   ShieldCheck,
   Activity,
+  ClipboardList,
+  CalendarDays,
+  Timer,
+  Kanban,
+  CalendarRange,
+  Handshake,
 } from "lucide-react";
+import { useAuth, type AppRole } from "@/hooks/useAuth";
 
 import {
   Sidebar,
@@ -32,7 +39,19 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
-const navGroups = [
+type NavItem = {
+  title: string;
+  url: string;
+  icon: typeof LayoutDashboard;
+  roles?: AppRole[];
+};
+
+type NavGroup = {
+  label: string;
+  items: NavItem[];
+};
+
+const navGroups: NavGroup[] = [
   {
     label: "Overview",
     items: [{ title: "CEO Cockpit", url: "/", icon: LayoutDashboard }],
@@ -59,16 +78,27 @@ const navGroups = [
     items: [
       { title: "Ops Scoreboard", url: "/ops", icon: Activity },
       { title: "Sales Pipeline", url: "/sales", icon: TrendingUp },
-      { title: "Virtual CFO", url: "/cfo", icon: Wallet },
+      { title: "Virtual CFO", url: "/cfo", icon: Wallet, roles: ["ceo", "executive"] },
       { title: "Project Hub", url: "/projects", icon: FolderKanban },
       { title: "Reports", url: "/reports", icon: BarChart3 },
     ],
   },
   {
+    label: "Operațional",
+    items: [
+      { title: "Daily Report", url: "/daily-report", icon: ClipboardList },
+      { title: "Weekly KPIs", url: "/weekly-kpis", icon: CalendarDays, roles: ["ceo", "executive", "manager"] },
+      { title: "SLA Tracker", url: "/sla-tracker", icon: Timer, roles: ["ceo", "executive", "manager"] },
+      { title: "Student Pipeline", url: "/pipeline", icon: Kanban },
+      { title: "Monthly Dashboard", url: "/monthly-dashboard", icon: CalendarRange, roles: ["ceo", "executive"] },
+      { title: "Agents", url: "/agents", icon: Handshake, roles: ["ceo", "executive", "agent_manager"] },
+    ],
+  },
+  {
     label: "Data",
     items: [
-      { title: "Integrations", url: "/integrations", icon: Plug },
-      { title: "GHL Users", url: "/ghl-users", icon: Users },
+      { title: "Integrations", url: "/integrations", icon: Plug, roles: ["ceo", "executive"] },
+      { title: "GHL Users", url: "/ghl-users", icon: Users, roles: ["ceo", "executive", "manager"] },
       { title: "Settings", url: "/settings", icon: Settings },
     ],
   },
