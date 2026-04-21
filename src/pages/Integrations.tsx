@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Plug,
@@ -18,6 +18,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useIntegrationsStatus, type IntegrationKey } from "@/hooks/useIntegrations";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
+import { ro } from "date-fns/locale";
 
 type IntegrationDef = {
   key: IntegrationKey;
@@ -67,6 +71,8 @@ export default function IntegrationsPage() {
   const { isAdmin, hasRole } = useAuth();
   const isManager = isAdmin || hasRole("ceo") || hasRole("executive") || hasRole("manager");
   const { data: statuses, isLoading, refetch, isFetching } = useIntegrationsStatus();
+  const queryClient = useQueryClient();
+  const [syncing, setSyncing] = useState<IntegrationKey | null>(null);
 
   const statusMap = useMemo(() => {
     const m = new Map<IntegrationKey, { connected: boolean; missing: string[] }>();
@@ -76,8 +82,52 @@ export default function IntegrationsPage() {
     return m;
   }, [statuses]);
 
+  const ghlConnected = statusMap.get("ghl")?.connected ?? false;
+
+  const { data: ghlStats } = useQuery({
+    queryKey: ["ghl-stats"],
+    enabled: isManager && ghlConnected,
+    queryFn: async () => {
+      const [leads, lastSync] = await Promise.all([
+        supabase.from("ghl_leads").select("id", { count: "exact", head: true }),
+        supabase
+          .from("ghl_sync_log")
+          .select("created_at, success, contacts_synced, opportunities_synced, error_message")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      return {
+        totalLeads: leads.count ?? 0,
+        lastSync: lastSync.data,
+      };
+    },
+    staleTime: 15_000,
+  });
+
   const connectedCount = (statuses ?? []).filter((s) => s.connected).length;
   const totalCount = INTEGRATIONS.length;
+
+  const handleSync = async (key: IntegrationKey) => {
+    if (key !== "ghl") {
+      toast.info("Sync pentru această integrare vine în următoarea iterație.");
+      return;
+    }
+    setSyncing(key);
+    try {
+      const { data, error } = await supabase.functions.invoke("ghl-sync-leads");
+      if (error) throw error;
+      toast.success(
+        `GHL sincronizat: ${data?.contacts ?? 0} contacte, ${data?.opportunities ?? 0} oportunități.`
+      );
+      queryClient.invalidateQueries({ queryKey: ["ghl-stats"] });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Sync a eșuat";
+      toast.error(`GHL sync eșuat: ${msg}`);
+    } finally {
+      setSyncing(null);
+    }
+  };
 
   const handleConnect = (def: IntegrationDef) => {
     const status = statusMap.get(def.key);
@@ -197,16 +247,42 @@ export default function IntegrationsPage() {
 
                   <p className="text-[11px] text-muted-foreground italic">{def.setupHint}</p>
 
+                  {connected && def.key === "ghl" && ghlStats && (
+                    <div className="rounded-md border border-border/60 bg-muted/30 p-2.5 text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Leads sincronizate:</span>
+                        <span className="font-semibold">{ghlStats.totalLeads}</span>
+                      </div>
+                      {ghlStats.lastSync && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Ultimul sync:</span>
+                          <span className={ghlStats.lastSync.success ? "text-success" : "text-destructive"}>
+                            {formatDistanceToNow(new Date(ghlStats.lastSync.created_at), {
+                              addSuffix: true,
+                              locale: ro,
+                            })}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex gap-2 mt-auto pt-2">
                     {connected ? (
                       <Button
                         size="sm"
                         variant="outline"
                         className="flex-1"
-                        disabled
-                        title="Sync va veni în următoarea iterație"
+                        disabled={!isManager || syncing === def.key || def.key !== "ghl"}
+                        onClick={() => handleSync(def.key)}
+                        title={def.key === "ghl" ? "Sincronizează acum" : "Sync va veni în următoarea iterație"}
                       >
-                        <RefreshCw className="h-3.5 w-3.5 mr-2" /> Sync (în curând)
+                        <RefreshCw className={`h-3.5 w-3.5 mr-2 ${syncing === def.key ? "animate-spin" : ""}`} />
+                        {def.key === "ghl"
+                          ? syncing === def.key
+                            ? "Sincronizez…"
+                            : "Sincronizează"
+                          : "Sync (în curând)"}
                       </Button>
                     ) : (
                       <Button
