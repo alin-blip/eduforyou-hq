@@ -479,7 +479,11 @@ export type Database = {
           ghl_opportunity_id: string
           ghl_updated_at: string | null
           id: string
+          last_note_at: string | null
+          last_note_body: string | null
           monetary_value: number | null
+          notes: Json
+          notes_count: number
           phone: string | null
           pipeline_id: string | null
           pipeline_name: string | null
@@ -503,7 +507,11 @@ export type Database = {
           ghl_opportunity_id: string
           ghl_updated_at?: string | null
           id?: string
+          last_note_at?: string | null
+          last_note_body?: string | null
           monetary_value?: number | null
+          notes?: Json
+          notes_count?: number
           phone?: string | null
           pipeline_id?: string | null
           pipeline_name?: string | null
@@ -527,7 +535,11 @@ export type Database = {
           ghl_opportunity_id?: string
           ghl_updated_at?: string | null
           id?: string
+          last_note_at?: string | null
+          last_note_body?: string | null
           monetary_value?: number | null
+          notes?: Json
+          notes_count?: number
           phone?: string | null
           pipeline_id?: string | null
           pipeline_name?: string | null
@@ -599,6 +611,36 @@ export type Database = {
           opportunities_synced?: number | null
           success?: boolean | null
           triggered_by?: string | null
+        }
+        Relationships: []
+      }
+      ghl_users: {
+        Row: {
+          created_at: string
+          display_name: string
+          ghl_user_id: string
+          is_active: boolean
+          language: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          ghl_user_id: string
+          is_active?: boolean
+          language?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          ghl_user_id?: string
+          is_active?: boolean
+          language?: string
+          notes?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
