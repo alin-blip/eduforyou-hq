@@ -10,6 +10,14 @@ const GHL_API_VERSION = "2021-07-28";
 const MAX_OPPORTUNITIES = 20000;
 const PAGE_SIZE = 100;
 const UPSERT_CHUNK = 500;
+const NOTES_CONCURRENCY = 6;
+const DEAD_STAGES = new Set([
+  "🛑 Refuz",
+  "👎Prezent Picat",
+  "❌ Aplicant Direct",
+  "❌ File in Process Picat",
+  "🚀 Finantare Aprobata",
+]);
 
 type GhlOpportunity = {
   id: string;
