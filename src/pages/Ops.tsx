@@ -25,6 +25,7 @@ import {
 } from "@/hooks/useOpsLeads";
 import { useGhlUsers } from "@/hooks/useGhlUsers";
 import { LeadDetailDrawer } from "@/components/ops/LeadDetailDrawer";
+import { OpsAiInsights } from "@/components/ops/OpsAiInsights";
 
 function fmtAging(hours: number): string {
   if (hours < 1) return `${Math.round(hours * 60)}m`;
@@ -165,6 +166,8 @@ export default function OpsPage() {
           tone={totals.urgent > 0 ? "danger" : "default"}
         />
       </div>
+
+      <OpsAiInsights />
 
       <Tabs value={lang} onValueChange={(v) => { setLang(v as LangFilter); setAssignee("all"); }}>
         <TabsList>
